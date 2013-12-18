@@ -2,7 +2,7 @@ import java.net.*;
 import java.io.*;
 import javax.net.ssl.HttpsURLConnection;
 
-class Rextester {
+public class Rextester {
      static String apiKey = "your_api_key_here";
      static String httpsURL =
          "https://test.openapi.starbucks.com/v1/oauth/token?api_key=";
