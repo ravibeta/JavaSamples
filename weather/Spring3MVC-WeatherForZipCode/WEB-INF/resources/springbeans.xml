@@ -1,0 +1,14 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+        <context:annotation-config />
+ 
+	<bean id="zipcode" class="net.ravi.spring3.form.ZipCode">
+		<property name="zipCode" value="98004" />
+	</bean>
+	<bean id="zipcodeController" class="net.ravi.spring3.controller.WeatherController">
+		<property name="zipCode" value="98004" />
+	</bean>
+</beans>
