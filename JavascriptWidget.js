@@ -7,16 +7,42 @@ P.when('A', 'formDataCreator', 'ready').register('signin-form-container', functi
                  success: 'signin:form_data:success',
                  failure: 'signin:form_data:error'
            };
-           var singOutButtonClass = '.signin-form-container-sign-out-link';
+           var signOutButtonClass = '.signin-form-container-sign-out-link';
            var emptyDiv = '<div />';
-                                                 
+ 
+           function handleActions(event, handleResponse) {
+                         event.preventDefault();
+                         var data = formDataCreator.retrieveFormData(event.target);
+                         var parameters = data.inputData.serializeArray();
+                         parameters.push(getNameValue(event.target));
+                         A.ajax(window.location.protocol + '//' + window.location.host + data.requestPath, {
+                                   method: 'POST',
+                                   params: parameters,
+                                   success: handleResponse,
+                                   error: handleFlowError
+                    });
+           }
+           function handleResponse(result, event) {
+                   if (result.redirectUrl) {
+                       window.location = result.redirectUrl;
+                       A.trigger('signin:form_data', 'redirectOnSignOut');
+                       return;
+                   }
+                  if (result.succeeded) {
+                      var targetClasses = $(event.target).attr('class');
+                      var targetClass = '.' + targetClasses.match(/signin-form-data-container-\w+/g)[0];
+                      // doSomething();
+                      return;
+                  }
+                  A.trigger(triggerEventNames.error, result);
+                  return;
+           }
            function registerSignInEvents() {
              var jsonp_url = 'http://api.plos.org/search?q=title:%22Drosophila%22%20and%20body:%22RNA%22&fl=id,abstract&wt=json&indent=on&start=1&rows=1';
              $.getJSON(jsonp_url, function(data) {
                $('#signin-form-container-div').html("This data comes from another server: " + data.html);
               });
            }
- 
            function registerSignOutEvents() {
                   $(signOutButtonClass).live('click', function(e) {
                         handleActions(e, function(data) {
@@ -26,7 +52,6 @@ P.when('A', 'formDataCreator', 'ready').register('signin-form-container', functi
            }
           registerSignOutEvents();
 });
-
 
 /*
 Sample output:
