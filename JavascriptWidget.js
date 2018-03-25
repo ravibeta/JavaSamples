@@ -1,16 +1,32 @@
-(function() {
-var jQuery;
-// Initialize jQuery say as reference from http://alexmarandon.com/articles/web_widget_jquery/ and omitted here:
+'use strict';
 
-function main() { 
-    jQuery(document).ready(function($) { 
-        var jsonp_url = 'http://api.plos.org/search?q=title:%22Drosophila%22%20and%20body:%22RNA%22&fl=id,abstract&wt=json&indent=on&start=1&rows=1';
-        $.getJSON(jsonp_url, function(data) {
-          $('#example-widget-container').html("This data comes from another server: " + data.html);
-        });
-    });
-}
-})(); 
+P.when('A', 'formDataCreator', 'ready').register('signin-form-container', function(A, formDataCreator) P
+           var $ = A.$;
+
+           var triggerEventNames = {
+                 success: 'signin:form_data:success',
+                 failure: 'signin:form_data:error'
+           };
+           var singOutButtonClass = '.signin-form-container-sign-out-link';
+           var emptyDiv = '<div />';
+                                                 
+           function registerSignInEvents() {
+             var jsonp_url = 'http://api.plos.org/search?q=title:%22Drosophila%22%20and%20body:%22RNA%22&fl=id,abstract&wt=json&indent=on&start=1&rows=1';
+             $.getJSON(jsonp_url, function(data) {
+               $('#signin-form-container-div').html("This data comes from another server: " + data.html);
+              });
+           }
+ 
+           function registerSignOutEvents() {
+                  $(signOutButtonClass).live('click', function(e) {
+                        handleActions(e, function(data) {
+                               handleResponse(data, e);
+                        });
+                });
+           }
+          registerSignOutEvents();
+});
+
 
 /*
 Sample output:
