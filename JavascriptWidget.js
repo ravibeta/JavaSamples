@@ -1,6 +1,6 @@
 'use strict';
 
-P.when('A', 'formDataCreator', 'ready').register('signin-form-container', function(A, formDataCreator) P
+P.when('A', 'formDataCreator', 'ready').register('signin-form-container', function(A, formDataCreator) {
            var $ = A.$;
 
            var triggerEventNames = {
