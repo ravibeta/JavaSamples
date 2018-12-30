@@ -78,16 +78,60 @@ public class GetMetricsRequest {
         }
         return digit;
     }
+    protected static byte[] HmacSHA256(String data, byte[] key) throws Exception {
+        String algorithm="HmacSHA256";
+        Mac mac = Mac.getInstance(algorithm);
+        mac.init(new SecretKeySpec(key, algorithm));
+        return mac.doFinal(data.getBytes("UTF8"));
+    }
+
+    protected static byte[] getSignatureKey(String key, String dateStamp, String regionName, String serviceName) throws Exception {
+        byte[] kSecret = ("AWS4" + key).getBytes("UTF8");
+        byte[] kDate = HmacSHA256(dateStamp, kSecret);
+        byte[] kRegion = HmacSHA256(regionName, kDate);
+        byte[] kService = HmacSHA256(serviceName, kRegion);
+        byte[] kSigning = HmacSHA256("aws4_request", kService);
+        return kSigning;
+    }
+
     public static void main(String[] args) throws InvalidKeyException, NoSuchAlgorithmException, IllegalStateException, UnsupportedEncodingException {
-        // http://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-post-example.html
-        String accessSecretKey = "AWS4" + "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
+        String AWS_ACCESS_KEY_ID="My_access_key";
+        String AWS_SECRET_ACCESS_KEY="My_access_secret";
+        String AWS_service="monitoring";
+        String AWS_host="monitoring.us-east-1.amazonaws.com";
+        String AWS_region="us-east-1";
+        String AWS_endpoint="https://monitoring.us-east-1.amazonaws.com";
+        String AWS_request_parameters="Action=GetMetricStatistics&Version=2010-08-01";
+
+        String accessSecretKey = "My_access_secret";
         String date = "20130806";
         String region = "us-east-1";
-        String regionService = "s3";
+        String regionService = "monitoring";
         String signing = "aws4_request";
-        String stringToSign = "eyAiZXhwaXJhdGlvbiI6ICIyMDEzLTA4LTA3VDEyOjAwOjAwLjAwMFoiLA0KICAiY29uZGl0aW9ucyI6IFsNCiAgICB7ImJ1Y2tldCI6ICJleGFtcGxlYnVja2V0In0sDQogICAgWyJzdGFydHMtd2l0aCIsICIka2V5IiwgInVzZXIvdXNlcjEvIl0sDQogICAgeyJhY2wiOiAicHVibGljLXJlYWQifSwNCiAgICB7InN1Y2Nlc3NfYWN0aW9uX3JlZGlyZWN0IjogImh0dHA6Ly9leGFtcGxlYnVja2V0LnMzLmFtYXpvbmF3cy5jb20vc3VjY2Vzc2Z1bF91cGxvYWQuaHRtbCJ9LA0KICAgIFsic3RhcnRzLXdpdGgiLCAiJENvbnRlbnQtVHlwZSIsICJpbWFnZS8iXSwNCiAgICB7IngtYW16LW1ldGEtdXVpZCI6ICIxNDM2NTEyMzY1MTI3NCJ9LA0KICAgIFsic3RhcnRzLXdpdGgiLCAiJHgtYW16LW1ldGEtdGFnIiwgIiJdLA0KDQogICAgeyJ4LWFtei1jcmVkZW50aWFsIjogIkFLSUFJT1NGT0ROTjdFWEFNUExFLzIwMTMwODA2L3VzLWVhc3QtMS9zMy9hd3M0X3JlcXVlc3QifSwNCiAgICB7IngtYW16LWFsZ29yaXRobSI6ICJBV1M0LUhNQUMtU0hBMjU2In0sDQogICAgeyJ4LWFtei1kYXRlIjogIjIwMTMwODA2VDAwMDAwMFoiIH0NCiAgXQ0KfQ==";
+        String request_parameters = "{";
+        request_parameters += "    \"Action\": \"GetMetricStatistics\", ";
+        request_parameters += "    \"Namespace\": \"On-PremiseObjectStorageMetrics\",";
+        request_parameters += "    \"MetricName\": \"BucketSizeBytes \",";
+        request_parameters += "    \"Dimensions\": [";
+        request_parameters += "        {";
+        request_parameters += "            \"Name\": \"BucketName\",";
+        request_parameters += "            \"Value\": \"ExampleBucket\"";
+        request_parameters += "        }";
+        request_parameters += "    ],";
+        request_parameters += "    \"StartTime\": 1545884562,";
+        request_parameters += "    \"EndTime\":  1545884662,";
+        request_parameters += "    \"Period\": 86400,";
+        request_parameters += "    \"Statistics\": [";
+        request_parameters += "        \"Average\"";
+        request_parameters += "    ],";
+        request_parameters += "    \"Unit\": \"Bytes\"";
+        request_parameters += "}";
 
-        logger.info("signature: {}", getSignatureV4(accessSecretKey, date, region, regionService, signing, stringToSign));
+        logger.info("signature: {}", getSignatureV4(accessSecretKey, date, region, regionService, signing, request_parameters));
     }
 
 }
+//
+// output:
+// [main] INFO com.emc.ecs.s3.sample.GetMetricsRequest - signature: 3758baea5fa2e4dd731c5e9804b6c0f41a3b230dbd530223842ba1afbb56c015
+//
