@@ -95,19 +95,27 @@ public class GetMetricsRequest {
     }
 
     public static void main(String[] args) throws InvalidKeyException, NoSuchAlgorithmException, IllegalStateException, UnsupportedEncodingException {
-        String AWS_ACCESS_KEY_ID="My_access_key";
-        String AWS_SECRET_ACCESS_KEY="My_access_secret";
-        String AWS_service="monitoring";
-        String AWS_host="monitoring.us-east-1.amazonaws.com";
-        String AWS_region="us-east-1";
-        String AWS_endpoint="https://monitoring.us-east-1.amazonaws.com";
+        String AWS_ACCESS_KEY_ID="MY_ACCESS_KEY";
+        String AWS_SECRET_ACCESS_KEY="MY_SECRET_KEY";
+        String service="monitoring";
+        String host="monitoring.us-east-1.amazonaws.com";
+        String region="us-east-1";
+        String endpoint="https://monitoring.us-east-1.amazonaws.com";
         String AWS_request_parameters="Action=GetMetricStatistics&Version=2010-08-01";
-
-        String accessSecretKey = "My_access_secret";
-        String date = "20130806";
-        String region = "us-east-1";
-        String regionService = "monitoring";
-        String signing = "aws4_request";
+        String amz_date = "20181230T125500Z";
+        String date_stamp = "20181230";
+        String canonical_uri = "/";
+        String canonical_querystring = "";
+        String method = "POST";
+        String apiName = "GetMetricStatistics";
+        String content_type = "application/x-amz-json-1.0";
+        String amz_target = "GraniteServiceVersion20100801."+apiName;
+        String canonical_headers = "content-type:" + content_type + "\n" + "host:" + host + "\n" + "x-amz-date:" + amz_date + "\n" + "x-amz-target:" + amz_target + "\n";
+        String signed_headers = "content-type;host;x-amz-date;x-amz-target";
+          String accessKey = AWS_ACCESS_KEY_ID;
+          String accessSecretKey = AWS_SECRET_ACCESS_KEY;
+          String date = "20130806";
+          String signing = "aws4_request";
         String request_parameters = "{";
         request_parameters += "    \"Action\": \"GetMetricStatistics\", ";
         request_parameters += "    \"Namespace\": \"On-PremiseObjectStorageMetrics\",";
@@ -127,11 +135,25 @@ public class GetMetricsRequest {
         request_parameters += "    \"Unit\": \"Bytes\"";
         request_parameters += "}";
 
-        logger.info("signature: {}", getSignatureV4(accessSecretKey, date, region, regionService, signing, request_parameters));
+        // String payload_hash = hashlib.sha256(request_parameters.encode('utf-8')).hexdigest()
+        // String canonical_request = method + '\n' + canonical_uri + '\n' + canonical_querystring + '\n' + canonical_headers + '\n' + signed_headers + '\n' + payload_hash;
+        // String algorithm = 'AWS4-HMAC-SHA256';
+        // String credential_scope = date_stamp + '/' + region + '/' + service + '/' + 'aws4_request';
+        // String string_to_sign = algorithm + '\n' +  amz_date + '\n' +  credential_scope + '\n' +  hashlib.sha256(canonical_request.encode('utf-8')).hexdigest();
+        // String signing_key = getSignatureKey(secret_key, date_stamp, region, service);
+        // String signature = hmac.new(signing_key, (string_to_sign).encode('utf-8'), hashlib.sha256).hexdigest();
+        // String authorization_header = algorithm + ' ' + 'Credential=' + access_key + '/' + credential_scope + ', ' +  'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + signature;
+        // logger.info("signature: {}", getSignatureV4(accessSecretKey, date, region, regionService, signing, request_parameters));
+        try {
+            byte[] signing_key = getSignatureKey(accessSecretKey, date_stamp, region, service);
+            logger.info("signature: {}", encodeToString(signing_key));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }
 //
 // output:
-// [main] INFO com.emc.ecs.s3.sample.GetMetricsRequest - signature: 3758baea5fa2e4dd731c5e9804b6c0f41a3b230dbd530223842ba1afbb56c015
+// [main] INFO com.emc.ecs.s3.sample.GetMetricsRequest - signature: c1391d813f0596e30497d180105f3e2a0defd24f4c5d15d0bdfa22dc905f7e42
 //
