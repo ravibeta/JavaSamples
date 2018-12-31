@@ -18,35 +18,6 @@ import org.slf4j.LoggerFactory;
 public class GetMetricsRequest {
     private static final Logger logger = LoggerFactory.getLogger(GetMetricsRequest.class);
 
-    private static final char[] DIGITS = {
-            '0', '1', '2', '3', '4', '5', '6', '7',
-            '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
-    };
-    public static String encodeToString(byte[] bytes) {
-        char[] encodedChars = encode(bytes);
-        return new String(encodedChars);
-    }
-    public static char[] encode(byte[] data) {
-
-        int l = data.length;
-
-        char[] out = new char[l << 1];
-
-        // two characters form the hex value.
-        for (int i = 0, j = 0; i < l; i++) {
-            out[j++] = DIGITS[(0xF0 & data[i]) >>> 4];
-            out[j++] = DIGITS[0x0F & data[i]];
-        }
-
-        return out;
-    }
-    protected static int toDigit(char ch, int index) throws IllegalArgumentException {
-        int digit = Character.digit(ch, 16);
-        if (digit == -1) {
-            throw new IllegalArgumentException("Illegal hexadecimal character " + ch + " at index " + index);
-        }
-        return digit;
-    }
     protected static byte[] sha256(String content) throws Exception {
          MessageDigest digest = MessageDigest.getInstance("SHA-256");
          byte[] encodedhash = digest.digest(
@@ -134,8 +105,8 @@ public class GetMetricsRequest {
     }
 
     public static void main(String[] args) throws InvalidKeyException, NoSuchAlgorithmException, IllegalStateException, UnsupportedEncodingException {
-        String AWS_ACCESS_KEY_ID="My_access_key";
-        String AWS_SECRET_ACCESS_KEY="My_access_secret";
+        String AWS_ACCESS_KEY_ID="MY_ACCESS_KEY";
+        String AWS_SECRET_ACCESS_KEY="MY_ACCESS_SECRET";
         String service="monitoring";
         String host="monitoring.us-east-1.amazonaws.com";
         String region="us-east-1";
@@ -176,7 +147,7 @@ public class GetMetricsRequest {
         request_parameters = new String(request_parameters.getBytes("UTF-8"), "UTF-8");
 
         try {
-            String payload_hash = bytesToHex(sha256(request_parameters)); 
+            String payload_hash = bytesToHex(sha256(request_parameters));
             String canonical_request = method + "\n" + canonical_uri + "\n" + canonical_querystring + "\n" + canonical_headers + "\n" + signed_headers + "\n" + payload_hash;
             canonical_request = new String(canonical_request.getBytes("UTF-8"), "UTF-8");
             String algorithm = "AWS4-HMAC-SHA256";
