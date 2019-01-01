@@ -112,7 +112,7 @@ public class PutMetricsRequest {
         String endpoint="https://monitoring.us-east-1.amazonaws.com";
         String AWS_request_parameters="Action=PutMetricData&Version=2010-08-01";
         String amz_date = getDateString();
-        String date_stamp = "20181231";
+        String date_stamp = amz_date.substring(0, amz_date.indexOf("T"));
         String canonical_uri = "/";
         String canonical_querystring = "";
         String method = "POST";
@@ -130,11 +130,15 @@ public class PutMetricsRequest {
         request_parameters += "\"MetricData\":";
         request_parameters += "[";
         request_parameters += "  {";
-        request_parameters += "    \"MetricName\": \"NumberOfObjects\",";
+        request_parameters += "    \"MetricName\": \"NumberOfObjects1\",";
         request_parameters += "    \"Dimensions\": [";
         request_parameters += "      {";
         request_parameters += "        \"Name\": \"BucketName\",";
         request_parameters += "        \"Value\": \"ExampleBucket\"";
+        request_parameters += "      },";
+        request_parameters += "      {";
+        request_parameters += "        \"Name\": \"ECSSystemId\",";
+        request_parameters += "        \"Value\": \"UUID\"";
         request_parameters += "      }";
         request_parameters += "    ],";
         request_parameters += "    \"Timestamp\": " + null + ",";
@@ -171,14 +175,14 @@ public class PutMetricsRequest {
 }
 /*
 output:
-[main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - x_amz_date = 20181231T213344Z
-[main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - signature: bfa7520029f34f6d407b381197bd18a97101efbd2d4fa5bc183c44522ce24fde
-[main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - authorization_header=AWS4-HMAC-SHA256 Credential=AKIAI7U5T3T2KGJPXXQQ/20181231/us-east-1/monitoring/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=b08a51264237c6e92bf389c45f1ca536d3f7f57a8e9c43b2f724773bad7b6c97
-[main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - Sending request with:{"Namespace":"On-PremiseObjectStorageMetrics","MetricData":[  {    "MetricName": "NumberOfObjects",    "Dimensions": [      {        "Name": "BucketName",        "Value": "ExampleBucket"      }    ],    "Timestamp": null,    "Value": 10,    "Unit": "Count",    "StorageResolution": 60  }]}
+[main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - x_amz_date = 20190101T191453Z
+[main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - signature: 0e41334b4914b5bd45e4733f4fb3e24536fa817586163b7388acb7af44db76c7
+[main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - authorization_header=AWS4-HMAC-SHA256 Credential=AKIAI7U5T3T2KGJPXXQQ/20190101/us-east-1/monitoring/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=a8d0ecb44a6399c8709e8df6772333cec47b261e0b84244729d92d5b83efa2c8
+[main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - Sending request with:{"Namespace":"On-PremiseObjectStorageMetrics","MetricData":[  {    "MetricName": "NumberOfObjects1",    "Dimensions": [      {        "Name": "BucketName",        "Value": "ExampleBucket"      },      {        "Name": "ECSSystemId",        "Value": "UUID"      }    ],    "Timestamp": null,    "Value": 10,    "Unit": "Count",    "StorageResolution": 60  }]}
 [main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - Sending a post request to:https://monitoring.us-east-1.amazonaws.com
-[main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - Header Authorization: AWS4-HMAC-SHA256 Credential=AKIAI7U5T3T2KGJPXXQQ/20181231/us-east-1/monitoring/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=b08a51264237c6e92bf389c45f1ca536d3f7f57a8e9c43b2f724773bad7b6c97
+[main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - Header Authorization: AWS4-HMAC-SHA256 Credential=AKIAI7U5T3T2KGJPXXQQ/20190101/us-east-1/monitoring/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=a8d0ecb44a6399c8709e8df6772333cec47b261e0b84244729d92d5b83efa2c8
 [main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - Header x-amz-target: GraniteServiceVersion20100801.PutMetricData
-[main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - Header x-amz-date: 20181231T213344Z
+[main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - Header x-amz-date: 20190101T191453Z
 [main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - Header Accept: application/json
 [main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - Header Content-Encoding: amz-1.0
 [main] INFO com.emc.ecs.monitoring.sample.PutMetricsRequest - Header Connection: keep-alive
