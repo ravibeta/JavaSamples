@@ -113,7 +113,7 @@ public class GetMetricsRequest {
         String endpoint="https://monitoring.us-east-1.amazonaws.com";
         String AWS_request_parameters="Action=GetMetricStatistics&Version=2010-08-01";
         String amz_date = getDateString(); // "20181231T1254900Z";
-        String date_stamp = "20181231";
+        String date_stamp = amz_date.substring(0, amz_date.indexOf("T"));
         String canonical_uri = "/";
         String canonical_querystring = "";
         String method = "POST";
@@ -171,14 +171,15 @@ public class GetMetricsRequest {
 }
 /*
 output:
-[main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - x_amz_date = 20181231T210801Z
-[main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - signature: bfa7520029f34f6d407b381197bd18a97101efbd2d4fa5bc183c44522ce24fde
-[main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - authorization_header=AWS4-HMAC-SHA256 Credential=AKIAI7U5T3T2KGJPXXQQ/20181231/us-east-1/monitoring/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=a713c40092d1f2c8dcf08457483500be869f87e62ca933b76613fc51962c67b4
+[main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - x_amz_date = 20190101T192552Z
+[main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - date_stamp=20190101
+[main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - signature: 0e41334b4914b5bd45e4733f4fb3e24536fa817586163b7388acb7af44db76c7
+[main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - authorization_header=AWS4-HMAC-SHA256 Credential=AKIAI7U5T3T2KGJPXXQQ/20190101/us-east-1/monitoring/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=12c7b4156757fcb538c2daf9a235443e02ed3e15a52443a4481be62fdd443b3b
 [main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - Sending request with:{    "Action": "GetMetricStatistics",     "Namespace": "On-PremiseObjectStorageMetrics",    "MetricName": "BucketSizeBytes",    "Dimensions": [        {            "Name": "BucketName",            "Value": "ExampleBucket"        }    ],    "StartTime": 1545884562,    "EndTime":  1545884662,    "Period": 86400,    "Statistics": [        "Average"    ],    "Unit": "Bytes"}
 [main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - Sending a post request to:https://monitoring.us-east-1.amazonaws.com
-[main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - Header Authorization: AWS4-HMAC-SHA256 Credential=AKIAI7U5T3T2KGJPXXQQ/20181231/us-east-1/monitoring/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=a713c40092d1f2c8dcf08457483500be869f87e62ca933b76613fc51962c67b4
+[main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - Header Authorization: AWS4-HMAC-SHA256 Credential=AKIAI7U5T3T2KGJPXXQQ/20190101/us-east-1/monitoring/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=12c7b4156757fcb538c2daf9a235443e02ed3e15a52443a4481be62fdd443b3b
 [main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - Header x-amz-target: GraniteServiceVersion20100801.GetMetricStatistics
-[main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - Header x-amz-date: 20181231T210801Z
+[main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - Header x-amz-date: 20190101T192552Z
 [main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - Header Accept: application/json
 [main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - Header Content-Encoding: amz-1.0
 [main] INFO com.emc.ecs.monitoring.sample.GetMetricsRequest - Header Connection: keep-alive
