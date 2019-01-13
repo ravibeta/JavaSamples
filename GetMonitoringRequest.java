@@ -138,15 +138,15 @@ public class GetMonitoringRequest {
     public static void main(String[] args) throws InvalidKeyException, NoSuchAlgorithmException, IllegalStateException, UnsupportedEncodingException {
         String AZURE_ACCESS_KEY_ID="MY_ACCESS_KEY";
         String AZURE_SECRET_ACCESS_KEY="MY_ACCESS_SECRET";
-        String AZURE_TENANT_ID = "1f4c33e1-e960-43bf-a135-6db8b82b6885";
+        String AZURE_TENANT_ID = "my_tenant_id";
         String ARMResource = "https://management.core.windows.net/";
         String SPNPayload = "resource={0}&client_id={1}&grant_type=client_credentials&client_secret={2}";
         String endpoint="https://management.azure.com/";
         String AZURE_request_parameters="Action=GetMetricStatistics&Version=2010-08-01";
         String amz_date = "20181230T125500Z";
         String date_stamp = "20181230";
-        String subscriptionId = "656e67c6-f810-4ea6-8b89-636dd0b6774c";
-        String resourceGroupName = "RaviRajamaniRG";
+        String subscriptionId = "my_subscription_id";
+        String resourceGroupName = "my_resource_group_name";
         String resource = "subscriptions/"+ subscriptionId + "/resourceGroups/" +  resourceGroupName + "/providers/Microsoft.Web/sites/shrink-text/metricdefinitions?api-version=2018-02-01";
         String canonical_uri = endpoint + resource;
         String canonical_querystring = "";
