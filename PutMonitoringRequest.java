@@ -193,7 +193,7 @@ public class PutMonitoringRequest {
 //
 //[main] INFO com.emc.ecs.monitoring.sample.PutMonitoringRequest - address=https://login.windows.net/<tenantId>/oauth2/token
 //        [main] INFO com.emc.ecs.monitoring.sample.PutMonitoringRequest - payload=resource=https%3A%2F%2Fmanagement.core.windows.net%2F&client_id=<my_client_id>&grant_type=client_credentials&client_secret=<my_client_secret>
-//        [main] INFO com.emc.ecs.monitoring.sample.PutMonitoringRequest - Sending a POST request to:https://login.windows.net/1f4c33e1-e960-43bf-a135-6db8b82b6885/oauth2/token
+//        [main] INFO com.emc.ecs.monitoring.sample.PutMonitoringRequest - Sending a POST request to:https://login.windows.net/tenantId/oauth2/token
 //        [main] INFO com.emc.ecs.monitoring.sample.PutMonitoringRequest - Resp Code:200
 //        [main] INFO com.emc.ecs.monitoring.sample.PutMonitoringRequest - response:{"token_type":"Bearer","expires_in":"3599","ext_expires_in":"3599","expires_on":"1547440166","not_before":"1547436266","resource":"https://management.core.windows.net/","access_token":"<myToken>"}
 //        [main] INFO com.emc.ecs.monitoring.sample.PutMonitoringRequest - token=<myToken>
