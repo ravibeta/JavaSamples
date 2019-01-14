@@ -116,9 +116,10 @@ public class GetMonitoringRequest {
             Map<String, String> headers = getHeaders();
             String response = getResponse(address, headers, payload, "POST");
             // logger.info("response="+response);
-            int start = response.indexOf("access_token");
+            int start = response.indexOf("\"access_token\":\"");
             if ( start != -1 ) {
-                int end = response.indexOf("\"", start + 12);
+                start += 16;
+                int end = response.indexOf("\"", start);
                 if ( end != -1  && end > start) {
                     token = response.substring(start, end);
                     logger.info("response:" + response);
@@ -170,6 +171,14 @@ public class GetMonitoringRequest {
 }
 //
 // output:
-// [main] INFO com.emc.ecs.monitoring.sample.GetMonitoringRequest - address=https://login.windows.net/1f4c33e1-e960-43bf-a135-6db8b82b6885/oauth2/token
-// [main] INFO com.emc.ecs.monitoring.sample.GetMonitoringRequest - payload=resource=https%3A%2F%2Fmanagement.core.windows.net%2F&client_id=6XMhqMBRns6ygLJ94gWpURi27AtNPef4zc11gLyXijrtPxblNNnRQD4rHNVrdM5XN7wYnNsgvlPINP668gqxgQ%3D%3D&grant_type=client_credentials&client_secret=DefaultEndpointsProtocol%3Dhttps%3BAccountName%3Dravirajamanirgdiag465%3BAccountKey%3D6XMhqMBRns6ygLJ94gWpURi27AtNPef4zc11gLyXijrtPxblNNnRQD4rHNVrdM5XN7wYnNsgvlPINP668gqxgQ%3D%3D%3BEndpointSuffix%3Dcore.windows.net
-// [main] INFO com.emc.ecs.monitoring.sample.GetMonitoringRequest - Sending a POST request to:https://login.windows.net/1f4c33e1-e960-43bf-a135-6db8b82b6885/oauth2/token
+/*
+(venv) ravi@RaviRajamani:~/ecs/ecs-samples/azure-java-workshop1$ java -jar build/libs/azure-java-workshop1-1.0.jar
+[main] INFO com.emc.ecs.monitoring.sample.GetMonitoringRequest - address=https://login.windows.net/<tenantId>/oauth2/token
+[main] INFO com.emc.ecs.monitoring.sample.GetMonitoringRequest - payload=resource=https%3A%2F%2Fmanagement.core.windows.net%2F&client_id=<client_id>&grant_type=client_credentials&client_secret=<client_secret>
+[main] INFO com.emc.ecs.monitoring.sample.GetMonitoringRequest - Sending a POST request to:https://login.windows.net/<tenantId>/oauth2/token
+[main] INFO com.emc.ecs.monitoring.sample.GetMonitoringRequest - Resp Code:200
+[main] INFO com.emc.ecs.monitoring.sample.GetMonitoringRequest - response:{"token_type":"Bearer","expires_in":"3600","ext_expires_in":"3600","expires_on":"1547434329","not_before":"1547430429","resource":"https://management.core.windows.net/","access_token":"<MyToken>"}
+[main] INFO com.emc.ecs.monitoring.sample.GetMonitoringRequest - token=<MyToken>
+[main] INFO com.emc.ecs.monitoring.sample.GetMonitoringRequest - Sending a GET request to:https://management.azure.com/subscriptions/<tenantId>/resourceGroups/RaviRajamaniRG/providers/Microsoft.Web/sites/shrink-text/metricdefinitions?api-version=2018-02-01
+[main] INFO com.emc.ecs.monitoring.sample.GetMonitoringRequest - Resp Code:200
+*/
