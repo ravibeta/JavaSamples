@@ -116,9 +116,10 @@ public class PutMonitoringRequest {
             Map<String, String> headers = getHeaders();
             String response = getResponse(address, headers, payload, "POST");
             // logger.info("response="+response);
-            int start = response.indexOf("access_token");
+            int start = response.indexOf("\"access_token\":\"");
             if ( start != -1 ) {
-                int end = response.indexOf("\"", start + 12);
+                start += 16;
+                int end = response.indexOf("\"", start);
                 if ( end != -1  && end > start) {
                     token = response.substring(start, end);
                     logger.info("response:" + response);
