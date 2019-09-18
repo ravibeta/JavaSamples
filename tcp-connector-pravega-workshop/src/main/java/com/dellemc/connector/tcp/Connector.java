@@ -8,6 +8,7 @@ import io.pravega.client.admin.ReaderGroupManager;
 import io.pravega.client.stream.Stream;
 import java.net.*;
 import java.io.*;
+import java.security.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import javax.net.ssl.HttpsURLConnection;
@@ -32,17 +33,17 @@ public class Connector {
       String streamName = "connectorStream";
       String scope = "global";
       URI uri = java.net.URI.create(pravega_endpoint);
-      clientConfig = ClientConfig.builder()
+      ClientConfig clientConfig = ClientConfig.builder()
                                  .controllerURI(uri)
-                                 .credentials(DefaultCredentials.create(password, username))
+                                 .credentials(new DefaultCredentials(password, username))
                                  .validateHostName(false)
                                  .build();
-      streamManager = StreamManager.create(clientConfig);
+      StreamManager streamManager = StreamManager.create(clientConfig);
       streamManager.createScope(scope);
       streamManager.createStream(scope, streamName, StreamConfiguration.builder().build());
       ReaderGroupConfig readGroupConfig = ReaderGroupConfig.builder().stream(Stream.of(scope, streamName)).build();
       ReaderGroupManager readerGroupManager = ReaderGroupManager.withScope(scope, uri);
-      String groupName = SecureRandom.uuid.gsub("-", "");
+      String groupName = UUID.randomUUID().toString().replace("-", "");
       readerGroupManager.createReaderGroup(groupName, readGroupConfig);
     }
 

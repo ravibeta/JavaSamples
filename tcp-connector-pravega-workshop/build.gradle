@@ -36,15 +36,7 @@ dependencies {
     compile group: 'org.slf4j', name:'slf4j-api', version: '1.7.24'
     compile group: 'com.jayway.jsonpath', name:'json-path', version:'2.1.0'
     compile group: 'org.springframework', name: 'spring-web', version: '5.0.2.RELEASE'
-    compile(group: 'io.pravega', name: 'pravega-client', version: pravegaVersion) {
-        exclude group:  'org.slf4j', module: 'slf4j-api'
-
-        // lombok should be compileOnly
-        exclude group: 'org.projectlombok', module: 'lombok'
-
-        // pravega-shared pulls in curator which isn't needed on the client
-        exclude group: 'org.apache.curator', module: 'curator-recipes'
-    }
+    compile group: 'io.pravega', name: 'pravega-client', version: pravegaVersion
     testCompile "junit:junit:4.+"
 }
 
