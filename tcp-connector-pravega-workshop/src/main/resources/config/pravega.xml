@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pravega:configuration>
+<pravega:configuration>
+    <param name="pravega_endpoint" value="https://localhost/pravega"/>
+    <param name="stream_name" value="connectorStream" />
+    <param name="scope" value="global" />
+    <param name="read-timeout_ms" value="60000" />
+    <param name="username" value="admin" />
+    <param name="password" value="" />
+</pravega:configuration>
+
