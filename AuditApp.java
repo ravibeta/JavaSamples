@@ -1,11 +1,25 @@
 package com.dellemc.pravega.app;
+
+import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 import io.pravega.client.ClientConfig;
+import io.pravega.client.ClientFactory;
 import io.pravega.client.stream.impl.DefaultCredentials;
+import io.pravega.client.stream.ScalingPolicy;
+import io.pravega.client.admin.ReaderGroupManager;
 import io.pravega.client.admin.StreamManager;
-import io.pravega.client.stream.StreamConfiguration;
+import io.pravega.client.stream.EventRead;
+import io.pravega.client.stream.EventStreamReader;
+import io.pravega.client.stream.EventStreamWriter;
+import io.pravega.client.stream.EventWriterConfig;
+import io.pravega.client.stream.ReaderConfig;
 import io.pravega.client.stream.ReaderGroupConfig;
+import io.pravega.client.stream.ReinitializationRequiredException;
+import io.pravega.client.stream.ScalingPolicy;
+import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.client.admin.ReaderGroupManager;
 import io.pravega.client.stream.Stream;
+import io.pravega.client.stream.impl.JavaSerializer;
 import java.net.*;
 import java.io.*;
 import java.nio.file.Files;
@@ -36,6 +50,7 @@ import org.slf4j.LoggerFactory;
 
 public class AuditApp{
     private static final Logger logger = LoggerFactory.getLogger(AuditApp.class);
+    private static final int READER_TIMEOUT_MS = 2000;
     protected static final String DEFAULT_SCOPE = "auditScope";
     protected static final String DEFAULT_STREAM_NAME = "auditStream";
     protected static final String DEFAULT_CONTROLLER_URI = "tcp://127.0.0.1:9090";    
@@ -160,7 +175,7 @@ public void readAndTransform(String scope, String streamName, URI controllerURI)
                     if (event.getEvent() != null) {
                         System.out.format("Read event '%s'%n", event.getEvent());
 			String message = transform(event.getEvent().toString());
-			write("srsScope", "srsStream", "tcp://127.0.0.1:9090", "srsRoutingKey", message);
+			write("srsScope", "srsStream", URI.create("tcp://127.0.0.1:9090"), "srsRoutingKey", message);
                     }
                 } catch (ReinitializationRequiredException e) {
                     //There are certain circumstances where the reader needs to be reinitialized
