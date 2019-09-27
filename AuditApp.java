@@ -309,6 +309,36 @@ Writing message: '{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"Metada
 [pool-1-thread-1] INFO io.pravega.client.netty.impl.ConnectionPoolImpl - Shutting down connection pool
 Closed: Socket[addr=/127.0.0.1,port=43004,localport=63333]
 */
+/*
+import org.apache.flink.api.common.functions.FlatMapFunction; 
+import org.apache.flink.api.java.DataSet; 
+import org.apache.flink.api.java.ExecutionEnvironment; 
+import org.apache.flink.api.java.tuple.Tuple2; 
+import org.apache.flink.api.java.utils.ParameterTool; 
+import org.apache.flink.examples.java.wordcount.util.WordCountData; 
+import org.apache.flink.util.Collector; 
 
+public static void main(String[] args) throws Exception { 
+final ParameterTool params = ParameterTool.fromArgs(args); 
+final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment(); 
+env.getConfig().setGlobalJobParameters(params); 
+DataSet<String> text; 
+text = env.readTextFile(params.get("input")); 
+DataSet<Tuple2<String, Integer>> counts = 
+text.flatMap(new Tokenizer()) 
+.groupBy(0) 
+.sum(1); 
+counts.print(); 
+}
+
+public static final class Tokenizer implements FlatMapFunction<String, Tuple2<String, Integer>> { 
+@Override 
+public void flatMap(String value, Collector<Tuple2<String, Integer>> out) { 
+String hours = getSubstring(entry, "before"); 
+out.collect(new Tuple2<>(hours, 1)); 
+}
+
+} 
+*/
 
 
