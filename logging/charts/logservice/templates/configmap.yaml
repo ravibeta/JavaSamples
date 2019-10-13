@@ -1,0 +1,14 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: logging-service
+  labels:
+    app.kubernetes.io/name: logging-service
+    app.kubernetes.io/version: "{{ .Chart.AppVersion }}"
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+data:
+  bootstrap.sh: |
+       #!/usr/bin/env bash
+       set -o errexit
+       set -o nounset
+       /usr/bin/gradle appRun | grep -v WARN

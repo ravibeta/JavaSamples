@@ -1,0 +1,27 @@
+plugins {
+    id 'war'  
+    id 'org.gretty' version '2.2.0'
+    id "io.freefair.lombok" version "3.1.0"
+    id 'java'
+}
+
+gretty {
+    servletContainer = 'jetty9.4'
+}
+
+group='com.k8s.app'
+
+repositories {
+    jcenter()
+    maven {
+        url "https://repository.apache.org/snapshots"
+    }
+}
+
+dependencies {
+    providedCompile 'javax.servlet:javax.servlet-api:3.1.0' 
+    compileOnly('org.projectlombok:lombok:1.16.20')
+    annotationProcessor 'org.projectlombok:lombok:1.16.20'
+    compile group: 'org.springframework', name: 'spring-web', version: '5.0.2.RELEASE'
+    compile group: 'io.pravega', name: 'pravega-client', version: '0.5.1'
+}
