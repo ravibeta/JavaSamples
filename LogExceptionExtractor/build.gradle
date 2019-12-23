@@ -28,8 +28,8 @@ group='com.dellemc.pravega.app'
 apply plugin: 'com.github.johnrengelman.shadow'
 version = '1.0'
 sourceSets.main.java.srcDirs = ['src']
-mainClassName = 'com.dellemc.pravega.app.AuditApp'
-applicationName = 'AuditApp'
+mainClassName = 'com.dellemc.pravega.app.LogExceptionExtractor'
+applicationName = 'LogExceptionExtractor'
 
 
 repositories {
@@ -69,13 +69,13 @@ dependencies {
 String classpathVar = configurations.compile.collect { it.getName() }.join(' ');
 jar {
     manifest {
-        attributes 'Implementation-Title': 'AuditApp',
+        attributes 'Implementation-Title': 'LogExceptionExtractor',
                 'Implementation-Version': version,
-                'Main-Class': 'com.dellemc.pravega.app.AuditApp',
+                'Main-Class': 'com.dellemc.pravega.app.LogExceptionExtractor',
 		'Class-Path': classpathVar
     }
     baseName = project.name 
-    mainClassName = 'com.dellemc.pravega.app.AuditApp'
+    mainClassName = 'com.dellemc.pravega.app.LogExceptionExtractoraa'
     from sourceSets.main.output
     from {
         configurations.runtimeClasspath.findAll { System.err.println(it.name); it.name.endsWith('jar') }.collect { zipTree(it) }
@@ -100,8 +100,8 @@ publishing {
 
     publications {
         maven(MavenPublication) {
-            groupId = 'com.dellemc.pravega.app.AuditApp'
-            artifactId = 'AuditApp'
+            groupId = 'com.dellemc.pravega.app.LogExceptionExtractor'
+            artifactId = 'LogExceptionExtractor'
             version = '1.0'
 
             from components.java
