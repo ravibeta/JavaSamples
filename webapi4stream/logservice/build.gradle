@@ -1,0 +1,85 @@
+buildscript {
+    repositories {
+        jcenter()
+        mavenLocal()
+        mavenCentral()
+        maven {
+            url "https://repository.apache.org/snapshots"
+        }
+    }
+    dependencies {
+      classpath 'com.github.jengelman.gradle.plugins:shadow:5.1.0'
+    }
+}
+
+plugins {
+    // Apply the java plugin to add support for Java
+    id 'java'
+
+    // Apply the application plugin to add support for building an application
+    id 'application'
+
+    id 'idea'
+    id "io.freefair.lombok" version "3.1.0"
+    id 'com.gradle.build-scan' version '2.0.2'
+}
+
+group='com.dellemc.pravega.app'
+apply plugin: 'com.github.johnrengelman.shadow'
+version = '1.0'
+sourceSets.main.java.srcDirs = ['src']
+mainClassName = 'com.dellemc.logstream'
+applicationName = 'logstream'
+
+
+repositories {
+        jcenter()
+        mavenLocal()
+        mavenCentral()
+        maven {
+            url "https://repository.apache.org/snapshots"
+        }
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots"
+        }
+}
+
+
+//Project dependencies
+dependencies {
+    compile 'javax.servlet:javax.servlet-api:3.1.0'
+    compileOnly('org.projectlombok:lombok:1.16.20')
+    annotationProcessor 'org.projectlombok:lombok:1.16.20'
+    compile group: 'org.springframework', name: 'spring-web', version: '5.0.2.RELEASE'
+
+    compile "io.pravega:pravega-client:0.6.0",
+            "io.pravega:pravega-common:0.6.0",
+            "commons-cli:commons-cli:1.4"
+    compile group: 'io.pravega', name: 'pravega-connectors-flink-1.7_2.12', version: '0.6.0'
+    compile files('libs/pravega-keycloak-credentials-0.1-SNAPSHOT')
+    compile "org.apache.flink:flink-core:1.7.2"
+    compile group: 'org.apache.flink', name: 'flink-streaming-java_2.12', version: '1.7.2'
+    compile "org.apache.flink:flink-java-examples:0.8.1"
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.24'
+    compile group: 'org.slf4j', name:'slf4j-api', version: '1.7.24'
+    compile group: 'com.jayway.jsonpath', name:'json-path', version:'2.1.0'
+    testCompile "junit:junit:4.+"
+}
+
+String classpathVar = configurations.compile.collect { it.getName() }.join(' ');
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'logstream',
+                'Implementation-Version': version,
+                'Main-Class': 'com.dellemc.logstream',
+                'Class-Path': classpathVar
+    }
+    baseName = project.name
+    mainClassName = 'com.dellemc.logstream'
+    from sourceSets.main.output
+    from {
+        configurations.runtimeClasspath.findAll { System.err.println(it.name); it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
+    zip64=true
+}
+
