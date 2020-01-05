@@ -57,12 +57,16 @@ dependencies {
     // Either io.pravega:pravega-keycloak-client:0.6.0 from oss-release-local or the shadow jar below
     // compile files('libs/pravega-keycloak-credentials-0.6.1-2419.5ae9098-0.14.0-W7-001.1701e90-shadow.jar')
     compile group: 'io.pravega', name: 'pravega-connectors-flink-1.7_2.12', version: '0.6.0'
-    compile "org.apache.flink:flink-core:1.7.2"
-    compile group: 'org.apache.flink', name: 'flink-streaming-java_2.12', version: '1.7.2'
+    compile "org.apache.flink:flink-core:1.8.0"
+    compile group: 'org.apache.flink', name: 'flink-streaming-java_2.12', version: '1.8.0'
     compile "org.apache.flink:flink-java-examples:0.8.1"
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.24'
     compile group: 'org.slf4j', name:'slf4j-api', version: '1.7.24'
     compile group: 'com.jayway.jsonpath', name:'json-path', version:'2.1.0'
+    // compile "org.apache.flink:flink-table_2.12:1.8.0"
+    compile 'org.apache.flink:flink-hadoop-fs:1.8.0'
+    compile 'org.apache.flink:flink-table:1.8.0'
+    compile 'org.apache.flink:flink-streaming-scala_2.12:1.8.0'
     testCompile "junit:junit:4.+"
 }
 
@@ -83,29 +87,33 @@ jar {
     zip64=true
 }
 
-apply plugin: "maven-publish"
-publishing {
-    repositories {
-        maven {
-            url = "http://localhost:9990/maven2"
-            credentials {
-                username "desdp"
-                password "password"
-            }
-            authentication {
-                basic(BasicAuthentication)
-            }
-        }
-    }
+//apply plugin: "maven-publish"
+//publishing {
+//    repositories {
+//        maven {
+//            url = "http://localhost:9990/maven2"
+//            credentials {
+//                username "desdp"
+//                password "password"
+//            }
+//            authentication {
+//                basic(BasicAuthentication)
+//            }
+//        }
+//    }
+//
+//    publications {
+//        maven(MavenPublication) {
+//            groupId = 'com.dellemc.pravega.app.LogExceptionExtractor'
+//            artifactId = 'LogExceptionExtractor'
+//            version = '1.0'
+//
+//            from components.java
+//        }
+//    }
+//}
 
-    publications {
-        maven(MavenPublication) {
-            groupId = 'com.dellemc.pravega.app.LogExceptionExtractor'
-            artifactId = 'LogExceptionExtractor'
-            version = '1.0'
-
-            from components.java
-        }
-    }
+task copyLogFile(type: Copy) {
+    from file("resources/exceptions.log")
+    into file("exceptions.log")
 }
-
