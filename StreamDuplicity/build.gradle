@@ -7,9 +7,6 @@ buildscript {
             url "https://repository.apache.org/snapshots"
         }
     }
-    // dependencies {
-    //   classpath 'com.github.jengelman.gradle.plugins:shadow:5.1.0'
-    // }
 }
 
 plugins {
@@ -25,7 +22,6 @@ plugins {
 }
 
 group='com.dellemc.pravega.app'
-// apply plugin: 'com.github.johnrengelman.shadow'
 version = '1.0'
 sourceSets.main.java.srcDirs = ['src']
 mainClassName = 'com.dellemc.pravega.app.StreamDuplicity'
@@ -45,9 +41,12 @@ repositories {
         maven {
             url "https://oss.jfrog.org/artifactory/oss-release-local"
         }
+        maven {
+            url "https://repo1.maven.org/maven2"
+        }
 }
 
-
+sourceCompatibility = 1.8
 //Project dependencies
 dependencies {
     compile "io.pravega:pravega-client:0.6.0",
@@ -56,6 +55,10 @@ dependencies {
             "commons-cli:commons-cli:1.4"
     // Either io.pravega:pravega-keycloak-client:0.6.0 from oss-release-local or the shadow jar below
     // compile files('libs/pravega-keycloak-credentials-0.6.1-2419.5ae9098-0.14.0-W7-001.1701e90-shadow.jar')
+    // implementation platform('software.amazon.awssdk:bom:2.X.X')
+    implementation 'software.amazon.awssdk:s3:2.13.0'
+    implementation 'com.amazonaws:aws-java-sdk-s3:1.11.769'
+    // implementation platform('software.amazon.awssdk:s3:jar:2.13.0')
     compile group: 'io.pravega', name: 'pravega-connectors-flink-1.7_2.12', version: '0.6.0'
     compile "org.apache.flink:flink-core:1.7.2"
     compile group: 'org.apache.flink', name: 'flink-streaming-java_2.12', version: '1.7.2'
@@ -77,10 +80,10 @@ jar {
     baseName = project.name 
     mainClassName = 'com.dellemc.pravega.app.StreamDuplicity'
     from sourceSets.main.output
-    from {
-        configurations.runtimeClasspath.findAll { System.err.println(it.name); it.name.endsWith('jar') }.collect { zipTree(it) }
-    }
-    zip64=true
+    // from {
+    //     configurations.runtimeClasspath.findAll { System.err.println(it.name); it.name.endsWith('jar') }.collect { zipTree(it) }
+    // }
+    // zip64=true
 }
 
 apply plugin: "maven-publish"
