@@ -27,7 +27,10 @@ import io.pravega.client.segment.impl.Segment;
 import io.pravega.client.stream.impl.StreamCutImpl;
 import io.pravega.client.segment.impl.SegmentTruncatedException;
 import io.pravega.client.stream.TruncatedDataException;
+import io.pravega.client.stream.impl.ByteBufferSerializer;
 import io.pravega.client.stream.impl.JavaSerializer;
+import io.pravega.client.stream.Serializer;
+import io.pravega.common.util.ByteBufferUtils;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.RuntimeContext;
@@ -55,6 +58,9 @@ import org.apache.flink.util.Collector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDateTime;
@@ -76,11 +82,11 @@ public class Reader {
     private static final Logger logger = LoggerFactory.getLogger(StreamDuplicity.class);
     // private static final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.DEFAULT_REGION).build();
 
-    private final JavaSerializer<String> SERIALIZER = new JavaSerializer<String>();
+    private final ByteBufferSerializer SERIALIZER = new ByteBufferSerializer();
 
     private String readerId;
     private EventStreamClientFactory clientFactory;
-    private EventStreamReader<String> eventStreamReader;
+    private EventStreamReader<ByteBuffer> eventStreamReader;
 
     private String stream;
 
@@ -102,14 +108,13 @@ public class Reader {
             beforeRead();
             while (!stopped) {
                 try {
-                    EventRead<String> result = doWithRetry(new Action<EventRead<String>>() {
+                    EventRead<ByteBuffer> result = doWithRetry(new Action<EventRead<ByteBuffer>>() {
                        @Override
-                       public EventRead<String> execute() throws Exception {
+                       public EventRead<ByteBuffer> execute() throws Exception {
                               return eventStreamReader.readNextEvent(0);
                        }
                     }, numRetries, retryMillis, true);
                     lastPosition = result.getPosition();
-
                     if (result != null && result.isCheckpoint() == false && result.getEvent() != null) {
                         afterRead(result.getEvent());
                     } else {
@@ -198,8 +203,8 @@ public class Reader {
         stopped = true;
     }
 
-    private void afterRead(String payload) {
-        logger.info("Reader read event: {}", payload);
+    private void afterRead(ByteBuffer payload) {
+        logger.info("Reader read event of size: {}", payload.capacity());
         try {
              // s3.putObject(Constants.BUCKET_NAME, Constants.KEY_NAME, new File(Constants.FILE_PATH));
         } catch (AmazonServiceException e) {

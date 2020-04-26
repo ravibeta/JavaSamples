@@ -128,8 +128,8 @@ public class StreamDuplicity {
                reader.start();
         });
         logger.info("Started reader");
-        Futures.await(future, 60000L);
-
+        Futures.await(future);
+        System.exit(0);
     }
     private static void writeEvents(EventStreamClientFactory clientFactory, String streamName, int eventNumber) {
         EventWriterConfig eventWriterConfig = EventWriterConfig.builder()
