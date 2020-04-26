@@ -69,6 +69,7 @@ import java.util.function.Consumer;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static io.pravega.common.concurrent.ExecutorServiceHelpers.newScheduledThreadPool;
 
 public class Reader {
     private static final Logger logger = LoggerFactory.getLogger(StreamDuplicity.class);
@@ -188,7 +189,7 @@ public class Reader {
         stopped = true;
     }
 
-    public void afterRead(String payload) {
+    private void afterRead(String payload) {
         try {
              s3.putObject(Constants.BUCKET_NAME, Constants.KEY_NAME, new File(Constants.FILE_PATH));
         } catch (AmazonServiceException e) {
@@ -196,7 +197,7 @@ public class Reader {
         }
     }
 
-    public void finished(Throwable e) {
+    private void finished(Throwable e) {
         if (e != null) {
             logger.error("Reader finished with Error", e);
         }
@@ -214,6 +215,34 @@ public class Reader {
             // raise a reader finished event
         }
     }
+
+    public Reader withClientFactory(EventStreamClientFactory clientFactory) {
+        this.clientFactory = clientFactory;
+        return this;
+    }
+
+    public Reader withReaderGroup(ReaderGroup readerGroup, int readerNum, int numRetries, int retryMillis, boolean restartable, long segment, long position) {
+        this.readerGroup = readerGroup;
+        this.numRetries = numRetries;
+        this.retryMillis = (retryMillis < 1000) ? 1000 : retryMillis;
+        this.segment = segment;
+        this.position = position;
+        this.restartable = restartable;
+        if (restartable) {
+            backgroundExecutor = newScheduledThreadPool(2, String.format("Checkpointer-%d",readerNum));
+            checkpoint = readerGroup.initiateCheckpoint(String.format("Checkpoint-%d",readerNum), backgroundExecutor);
+            logger.info("reader {} checkpoint initiated", String.format("Checkpoint-%d",readerNum));
+        } else {
+            logger.info( "reader {} with readerGroup not restartable", String.format("Checkpoint-%d",readerNum));
+        }
+        return this;
+    }
+
+    public Reader withStream(String stream) {
+        this.stream = stream;
+        return this;
+    }
+
 
     public ReaderGroup getReaderGroup() {
         return readerGroup;
