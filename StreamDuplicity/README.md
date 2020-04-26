@@ -1,3 +1,3 @@
 # StreamDuplicity
-a test application to exercise PravegaFlinkReader and PravegaFlinkWriter from a maven artifact deployed to Dell EMC Streaming Data platform.
+This is an application to copy data from a stream store to S3.
 
