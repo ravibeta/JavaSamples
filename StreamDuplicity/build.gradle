@@ -51,6 +51,7 @@ sourceCompatibility = 1.8
 dependencies {
     compile "io.pravega:pravega-client:0.6.0",
             "io.pravega:pravega-common:0.6.0",
+            // "io.pravega:pravega-shared:0.6.0",
             "io.pravega:pravega-keycloak-client:0.6.0",
             "commons-cli:commons-cli:1.4"
     // Either io.pravega:pravega-keycloak-client:0.6.0 from oss-release-local or the shadow jar below
@@ -80,10 +81,10 @@ jar {
     baseName = project.name 
     mainClassName = 'com.dellemc.pravega.app.StreamDuplicity'
     from sourceSets.main.output
-    // from {
-    //     configurations.runtimeClasspath.findAll { System.err.println(it.name); it.name.endsWith('jar') }.collect { zipTree(it) }
-    // }
-    // zip64=true
+    from {
+        configurations.runtimeClasspath.findAll { System.err.println(it.name); it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
+    zip64=true
 }
 
 apply plugin: "maven-publish"

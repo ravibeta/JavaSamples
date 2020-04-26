@@ -73,7 +73,7 @@ import static io.pravega.common.concurrent.ExecutorServiceHelpers.newScheduledTh
 
 public class Reader {
     private static final Logger logger = LoggerFactory.getLogger(StreamDuplicity.class);
-    private static final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.DEFAULT_REGION).build();
+    // private static final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.DEFAULT_REGION).build();
 
     private final JavaSerializer<String> SERIALIZER = new JavaSerializer<String>();
 
@@ -97,13 +97,13 @@ public class Reader {
 
     public void start() {
         try {
+            beforeRead();
             while (!stopped) {
                 try {
-                    beforeRead();
                     EventRead<String> result = doWithRetry(new Action<EventRead<String>>() {
                        @Override
                        public EventRead<String> execute() throws Exception {
-                              return eventStreamReader.readNextEvent(1000);
+                              return eventStreamReader.readNextEvent(0);
                        }
                     }, numRetries, retryMillis, true);
                     lastPosition = result.getPosition();
@@ -190,8 +190,9 @@ public class Reader {
     }
 
     private void afterRead(String payload) {
+        logger.info("Reader read event: {}", payload);
         try {
-             s3.putObject(Constants.BUCKET_NAME, Constants.KEY_NAME, new File(Constants.FILE_PATH));
+             // s3.putObject(Constants.BUCKET_NAME, Constants.KEY_NAME, new File(Constants.FILE_PATH));
         } catch (AmazonServiceException e) {
              logger.error("Exception:{}", e);
         }

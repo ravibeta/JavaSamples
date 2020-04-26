@@ -1,0 +1,13 @@
+creating stream
+stream created
+readerGroup created
+Wrote event 0
+Wrote event 1
+Wrote event 2
+Wrote event 3
+Wrote event 4
+Reader read event: Hello World Charles Babbage 0
+Reader read event: Hello World Charles Babbage 1
+Reader read event: Hello World Charles Babbage 2
+Reader read event: Hello World Charles Babbage 3
+Reader read event: Hello World Charles Babbage 4

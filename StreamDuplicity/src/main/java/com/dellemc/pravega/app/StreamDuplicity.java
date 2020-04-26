@@ -1,10 +1,10 @@
-
 package com.dellemc.pravega.app;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import io.pravega.common.Exceptions;
 import io.pravega.client.ClientConfig;
 import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.Stream;
@@ -21,6 +21,8 @@ import io.pravega.client.admin.StreamManager;
 import io.pravega.client.stream.Checkpoint;
 import io.pravega.client.stream.EventRead;
 import io.pravega.client.stream.EventStreamReader;
+import io.pravega.client.stream.EventStreamWriter;
+import io.pravega.client.stream.EventWriterConfig;
 import io.pravega.client.stream.Position;
 import io.pravega.client.stream.ReaderConfig;
 import io.pravega.client.stream.ReaderGroup;
@@ -80,38 +82,43 @@ import java.util.function.Function;
 
 public class StreamDuplicity {
     private static final Logger logger = LoggerFactory.getLogger(StreamDuplicity.class);
-    private static final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.DEFAULT_REGION).build();
+    // private static final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.DEFAULT_REGION).build();
     private static EventStreamClientFactory clientFactory;
     private static ReaderGroup readerGroup;
     private static ReaderGroupManager readerGroupManager;
     private static int readerNum = 1;
-    private static int numRetries = 10;
+    private static int numRetries = 0;
     private static int retryMillis = 100; 
-    private static boolean restartable = true;
+    private static boolean restartable = false;
     private static long segment = 0L;
     private static long position = 0L;
 
     public static void main(String argv[]) throws Exception {
         final ParameterTool params = ParameterTool.fromArgs(argv);
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.getConfig().setGlobalJobParameters(params);
         String scope = Constants.DEFAULT_SCOPE;
         String streamName = Constants.DEFAULT_STREAM_NAME;
-        PravegaConfig pravegaConfig = PravegaConfig.fromParams(ParameterTool.fromArgs(argv));
+        PravegaConfig pravegaConfig = PravegaConfig.fromParams(ParameterTool.fromArgs(argv))
+           .withControllerURI(Constants.CONTROLLER_URI)
+           .withDefaultScope(Constants.DEFAULT_SCOPE)
+           .withCredentials(adminCredentials())
+           .withHostnameValidation(false);
         StreamConfiguration streamConfig = StreamConfiguration.builder()
                 .scalingPolicy(ScalingPolicy.fixed(Constants.NO_OF_SEGMENTS))
                 .build();
-
         ClientConfig clientConfig = ClientConfig.builder()
             .credentials(adminCredentials())
             .controllerURI(Constants.CONTROLLER_URI).build();
         clientFactory = EventStreamClientFactory.withScope(scope, clientConfig);
+        createStream(pravegaConfig, streamName, streamConfig);
         if (readerGroupManager == null) {
             readerGroupManager = ReaderGroupManager.withScope(scope, clientConfig);
         }
         String readerGroupName = "data-transfer-reader-group";
         makeReaderGroup(readerGroupName);
         Stream stream = pravegaConfig.resolve(streamName);
+        for (int i = 0; i < 5; i++) {
+              writeEvents(clientFactory, streamName, i);
+        }
         final Reader reader = new Reader()
                 .withClientFactory(clientFactory)
                 .withReaderGroup(readerGroup, readerNum, numRetries, retryMillis, restartable, segment, position)
@@ -124,24 +131,53 @@ public class StreamDuplicity {
         Futures.await(future);
 
     }
-
+    private static void writeEvents(EventStreamClientFactory clientFactory, String streamName, int eventNumber) {
+        EventWriterConfig eventWriterConfig = EventWriterConfig.builder()
+                .transactionTimeoutTime(30_000)
+                .build();
+        JavaSerializer<String> SERIALIZER = new JavaSerializer<String>();
+        EventStreamWriter<String> writer = clientFactory.createEventWriter(streamName, SERIALIZER, eventWriterConfig);
+        String payload = "Hello World Charles Babbage " + String.valueOf(eventNumber);
+        CompletableFuture<Void> writeEvent = writer.writeEvent(UUID.randomUUID().toString(), payload);
+        int sizeOfEvent = io.netty.buffer.Unpooled.wrappedBuffer(SERIALIZER.serialize(payload)).readableBytes();
+        logger.info("Wrote event of size:{}", sizeOfEvent);
+        Exceptions.handleInterrupted(() -> {
+            try {
+                writeEvent.get(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                // Not handled here.
+            }
+        });
+    }
     private static void makeReaderGroup(String readerGroupName) {
         if (readerGroup == null) {
+            readerGroupManager.createReaderGroup(readerGroupName, ReaderGroupConfig.builder()
+                    .stream(Constants.DEFAULT_SCOPE + "/" + Constants.DEFAULT_STREAM_NAME).build());
             readerGroup = readerGroupManager.getReaderGroup(readerGroupName);
             logger.info("created readerGroup {}", readerGroup.getGroupName());
         } else {
             logger.info("using existing readerGroup {}", readerGroup.getGroupName());
         }
     }
-
-    public static Credentials adminCredentials() {
+    public static DefaultCredentials adminCredentials() {
         return new DefaultCredentials(Constants.PASSWORD, Constants.USERNAME);
     }
-
     private static StreamManager streamManager() {
         return StreamManager.create(ClientConfig.builder()
             .credentials(adminCredentials())
             .controllerURI(Constants.CONTROLLER_URI)
             .build());
     }
+    public static Stream createStream(PravegaConfig pravegaConfig, String streamName, StreamConfiguration streamConfig) {
+        // resolve the qualified name of the stream
+        Stream stream = pravegaConfig.resolve(streamName);
+
+        try(StreamManager streamManager = StreamManager.create(pravegaConfig.getClientConfig())) {
+            streamManager.createScope(stream.getScope());
+            streamManager.createStream(stream.getScope(), stream.getStreamName(), streamConfig);
+        }
+
+        return stream;
+    }
+
 }
