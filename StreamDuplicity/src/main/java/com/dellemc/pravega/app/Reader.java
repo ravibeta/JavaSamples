@@ -25,6 +25,7 @@ import io.pravega.client.stream.ReinitializationRequiredException;
 import io.pravega.client.stream.StreamCut;
 import io.pravega.client.segment.impl.Segment;
 import io.pravega.client.stream.impl.StreamCutImpl;
+import io.pravega.client.segment.impl.SegmentTruncatedException;
 import io.pravega.client.stream.TruncatedDataException;
 import io.pravega.client.stream.impl.JavaSerializer;
 import org.apache.flink.api.common.functions.AggregateFunction;
@@ -93,6 +94,7 @@ public class Reader {
     private int retryMillis = 1000;
     private long segment = 0;
     private long position = 0;
+    private long count = 0;
     private boolean restartable = false;
 
     public void start() {
@@ -110,7 +112,10 @@ public class Reader {
 
                     if (result != null && result.isCheckpoint() == false && result.getEvent() != null) {
                         afterRead(result.getEvent());
+                    } else {
+                        count++;
                     }
+                    if (count == 3 && !restartable) stopped = true;
                 }
                 catch (ReinitializationRequiredException e) {
                     // Expected
@@ -125,6 +130,10 @@ public class Reader {
                 }
                 catch (TruncatedDataException e) {
                     logger.error("Got a truncated data exception on forgetful reader {} after position {}", readerId, lastPosition, e);
+                    checkAndThrow(e);
+                }
+                catch (SegmentTruncatedException e) {
+                    logger.error("Segment is truncated: {}", e);
                     checkAndThrow(e);
                 }
             }

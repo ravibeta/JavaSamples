@@ -128,7 +128,7 @@ public class StreamDuplicity {
                reader.start();
         });
         logger.info("Started reader");
-        Futures.await(future);
+        Futures.await(future, 60000L);
 
     }
     private static void writeEvents(EventStreamClientFactory clientFactory, String streamName, int eventNumber) {
