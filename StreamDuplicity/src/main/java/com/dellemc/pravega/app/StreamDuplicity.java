@@ -3,7 +3,6 @@ package com.dellemc.pravega.app;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import io.pravega.common.Exceptions;
 import io.pravega.client.ClientConfig;
 import io.pravega.client.stream.ScalingPolicy;
@@ -63,11 +62,15 @@ import org.apache.flink.util.Collector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;
+import java.io.InputStream;
+import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
+import java.util.Properties;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -82,7 +85,6 @@ import java.util.function.Function;
 
 public class StreamDuplicity {
     private static final Logger logger = LoggerFactory.getLogger(StreamDuplicity.class);
-    // private static final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.DEFAULT_REGION).build();
     private static EventStreamClientFactory clientFactory;
     private static ReaderGroup readerGroup;
     private static ReaderGroupManager readerGroupManager;
@@ -92,36 +94,48 @@ public class StreamDuplicity {
     private static boolean restartable = false;
     private static long segment = 0L;
     private static long position = 0L;
+    private static String bucketName;
+    private static String key;
+    private static String secret;
+    private static String region;
+    private static String scopeName;
+    private static String streamName;
+    private static String controllerUriText;
+    private static String username;
+    private static String password;
+    private static Integer numberOfSegments;
 
     public static void main(String argv[]) throws Exception {
         final ParameterTool params = ParameterTool.fromArgs(argv);
-        String scope = Constants.DEFAULT_SCOPE;
-        String streamName = Constants.DEFAULT_STREAM_NAME;
+        readProperties();
         PravegaConfig pravegaConfig = PravegaConfig.fromParams(ParameterTool.fromArgs(argv))
-           .withControllerURI(Constants.CONTROLLER_URI)
-           .withDefaultScope(Constants.DEFAULT_SCOPE)
+           .withControllerURI(URI.create(controllerUriText))
+           .withDefaultScope(scopeName)
            .withCredentials(adminCredentials())
            .withHostnameValidation(false);
         StreamConfiguration streamConfig = StreamConfiguration.builder()
-                .scalingPolicy(ScalingPolicy.fixed(Constants.NO_OF_SEGMENTS))
+                .scalingPolicy(ScalingPolicy.fixed(numberOfSegments))
                 .build();
         ClientConfig clientConfig = ClientConfig.builder()
             .credentials(adminCredentials())
-            .controllerURI(Constants.CONTROLLER_URI).build();
-        clientFactory = EventStreamClientFactory.withScope(scope, clientConfig);
+            .controllerURI(URI.create(controllerUriText)).build();
+        clientFactory = EventStreamClientFactory.withScope(scopeName, clientConfig);
         createStream(pravegaConfig, streamName, streamConfig);
         if (readerGroupManager == null) {
-            readerGroupManager = ReaderGroupManager.withScope(scope, clientConfig);
+            readerGroupManager = ReaderGroupManager.withScope(scopeName, clientConfig);
         }
         String readerGroupName = "data-transfer-reader-group";
         makeReaderGroup(readerGroupName);
         Stream stream = pravegaConfig.resolve(streamName);
-        for (int i = 0; i < 5; i++) {
-              writeEvents(clientFactory, streamName, i);
-        }
+        // for debugging purpose only
+        // for (int i = 0; i < 5; i++) {
+        //       writeEvents(clientFactory, streamName, i);
+        // }
         final Reader reader = new Reader()
                 .withClientFactory(clientFactory)
                 .withReaderGroup(readerGroup, readerNum, numRetries, retryMillis, restartable, segment, position)
+                .withAWSCredentials(key, secret, region, bucketName)
+                .withPravegaProperties(scopeName, streamName, controllerUriText, username, password, numberOfSegments)
                 .withStream(streamName);
 
         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
@@ -129,15 +143,16 @@ public class StreamDuplicity {
         });
         logger.info("Started reader");
         Futures.await(future);
-        System.exit(0);
+        // System.exit(0);
     }
+
     private static void writeEvents(EventStreamClientFactory clientFactory, String streamName, int eventNumber) {
         EventWriterConfig eventWriterConfig = EventWriterConfig.builder()
                 .transactionTimeoutTime(30_000)
                 .build();
         JavaSerializer<String> SERIALIZER = new JavaSerializer<String>();
         EventStreamWriter<String> writer = clientFactory.createEventWriter(streamName, SERIALIZER, eventWriterConfig);
-        String payload = "Hello World Charles Babbage " + String.valueOf(eventNumber);
+        String payload = "Hello World Lady Ada Lovelace " + String.valueOf(eventNumber);
         CompletableFuture<Void> writeEvent = writer.writeEvent(UUID.randomUUID().toString(), payload);
         int sizeOfEvent = io.netty.buffer.Unpooled.wrappedBuffer(SERIALIZER.serialize(payload)).readableBytes();
         logger.info("Wrote event of size:{}", sizeOfEvent);
@@ -152,7 +167,7 @@ public class StreamDuplicity {
     private static void makeReaderGroup(String readerGroupName) {
         if (readerGroup == null) {
             readerGroupManager.createReaderGroup(readerGroupName, ReaderGroupConfig.builder()
-                    .stream(Constants.DEFAULT_SCOPE + "/" + Constants.DEFAULT_STREAM_NAME).build());
+                    .stream(scopeName + "/" + streamName).build());
             readerGroup = readerGroupManager.getReaderGroup(readerGroupName);
             logger.info("created readerGroup {}", readerGroup.getGroupName());
         } else {
@@ -160,16 +175,15 @@ public class StreamDuplicity {
         }
     }
     public static DefaultCredentials adminCredentials() {
-        return new DefaultCredentials(Constants.PASSWORD, Constants.USERNAME);
+        return new DefaultCredentials(password, username);
     }
     private static StreamManager streamManager() {
         return StreamManager.create(ClientConfig.builder()
             .credentials(adminCredentials())
-            .controllerURI(Constants.CONTROLLER_URI)
+            .controllerURI(URI.create(controllerUriText))
             .build());
     }
     public static Stream createStream(PravegaConfig pravegaConfig, String streamName, StreamConfiguration streamConfig) {
-        // resolve the qualified name of the stream
         Stream stream = pravegaConfig.resolve(streamName);
 
         try(StreamManager streamManager = StreamManager.create(pravegaConfig.getClientConfig())) {
@@ -179,5 +193,26 @@ public class StreamDuplicity {
 
         return stream;
     }
-
+    public static void readProperties() throws IOException {
+        try (InputStream input = StreamDuplicity.class.getClassLoader().getResourceAsStream("config.properties")) {
+            Properties prop = new Properties();
+            if (input == null) {
+                throw new RuntimeException("Without config properties, the source and destination for this data transfer are not known.");
+            }
+            prop.load(input);
+            bucketName = System.getenv().getOrDefault("BUCKET_NAME", prop.getProperty("bucket_name"));
+            key = System.getenv().getOrDefault("AWS_ACCESS_KEY_ID", prop.getProperty("aws_access_key_id"));
+            secret = System.getenv().getOrDefault("AWS_SECRET_ACCESS_KEY", prop.getProperty("aws_secret_access_key"));
+            region = System.getenv().getOrDefault("AWS_REGION", prop.getProperty("aws_region"));
+            scopeName = System.getenv().getOrDefault("SCOPE_NAME", prop.getProperty("scope_name"));
+            streamName = System.getenv().getOrDefault("STREAM_NAME", prop.getProperty("stream_name"));
+            controllerUriText = System.getenv().getOrDefault("CONTROLLER_URI", prop.getProperty("controller_uri"));
+            username = System.getenv().getOrDefault("USERNAME", prop.getProperty("pravega_username"));
+            password = System.getenv().getOrDefault("PASSWORD", prop.getProperty("pravega_password"));
+            numberOfSegments = Integer.valueOf(System.getenv().getOrDefault("NUMBER_OF_SEGMENTS", prop.getProperty("number_of_segments")));
+        } catch (IOException e) {
+            logger.info("configuration properties file not found: {}", e);
+            throw e;
+        }
+    }
 }

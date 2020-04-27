@@ -47,19 +47,13 @@ repositories {
 }
 
 sourceCompatibility = 1.8
-//Project dependencies
 dependencies {
     compile "io.pravega:pravega-client:0.6.0",
             "io.pravega:pravega-common:0.6.0",
-            // "io.pravega:pravega-shared:0.6.0",
             "io.pravega:pravega-keycloak-client:0.6.0",
             "commons-cli:commons-cli:1.4"
-    // Either io.pravega:pravega-keycloak-client:0.6.0 from oss-release-local or the shadow jar below
-    // compile files('libs/pravega-keycloak-credentials-0.6.1-2419.5ae9098-0.14.0-W7-001.1701e90-shadow.jar')
-    // implementation platform('software.amazon.awssdk:bom:2.X.X')
-    implementation 'software.amazon.awssdk:s3:2.13.0'
-    implementation 'com.amazonaws:aws-java-sdk-s3:1.11.769'
-    // implementation platform('software.amazon.awssdk:s3:jar:2.13.0')
+    implementation platform('software.amazon.awssdk:bom:2.13.0')
+    implementation 'software.amazon.awssdk:s3'
     compile group: 'io.pravega', name: 'pravega-connectors-flink-1.7_2.12', version: '0.6.0'
     compile "org.apache.flink:flink-core:1.7.2"
     compile group: 'org.apache.flink', name: 'flink-streaming-java_2.12', version: '1.7.2'
@@ -93,8 +87,8 @@ publishing {
         maven {
             url = "http://localhost:9090/maven2"
             credentials {
-                username "desdp"
-                password "password"
+                username ""
+                password ""
             }
             authentication {
                 basic(BasicAuthentication)

@@ -1,9 +1,13 @@
 package com.dellemc.pravega.app;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.Stream;
 import io.pravega.client.stream.StreamConfiguration;
@@ -30,6 +34,7 @@ import io.pravega.client.stream.TruncatedDataException;
 import io.pravega.client.stream.impl.ByteBufferSerializer;
 import io.pravega.client.stream.impl.JavaSerializer;
 import io.pravega.client.stream.Serializer;
+import io.pravega.common.util.ByteArraySegment;
 import io.pravega.common.util.ByteBufferUtils;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FilterFunction;
@@ -59,6 +64,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.Serializable;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -67,6 +73,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -80,7 +87,6 @@ import static io.pravega.common.concurrent.ExecutorServiceHelpers.newScheduledTh
 
 public class Reader {
     private static final Logger logger = LoggerFactory.getLogger(StreamDuplicity.class);
-    // private static final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.DEFAULT_REGION).build();
 
     private final ByteBufferSerializer SERIALIZER = new ByteBufferSerializer();
 
@@ -100,27 +106,37 @@ public class Reader {
     private int retryMillis = 1000;
     private long segment = 0;
     private long position = 0;
-    private long count = 0;
+    private long sequence = 0;
     private boolean restartable = false;
+    private String key;
+    private String secret;
+    private String regionName;
+    private S3Client s3;
+    private String bucketName;
+    private String scopeName;
+    private String streamName;
+    private String controllerUriText;
+    private String username;
+    private String password;
+    private Integer numberOfSegments;
 
     public void start() {
         try {
             beforeRead();
             while (!stopped) {
                 try {
-                    EventRead<ByteBuffer> result = doWithRetry(new Action<EventRead<ByteBuffer>>() {
+             
+                    EventRead<ByteBuffer> result = null;
+                    doWithRetry(new Action<EventRead<ByteBuffer>>() {
                        @Override
                        public EventRead<ByteBuffer> execute() throws Exception {
-                              return eventStreamReader.readNextEvent(0);
+                              return eventStreamReader.readNextEvent(1000);
                        }
                     }, numRetries, retryMillis, true);
                     lastPosition = result.getPosition();
                     if (result != null && result.isCheckpoint() == false && result.getEvent() != null) {
                         afterRead(result.getEvent());
-                    } else {
-                        count++;
                     }
-                    if (count == 3 && !restartable) stopped = true;
                 }
                 catch (ReinitializationRequiredException e) {
                     // Expected
@@ -205,10 +221,32 @@ public class Reader {
 
     private void afterRead(ByteBuffer payload) {
         logger.info("Reader read event of size: {}", payload.capacity());
+        logger.debug(StandardCharsets.UTF_8.decode(payload).toString());
         try {
-             // s3.putObject(Constants.BUCKET_NAME, Constants.KEY_NAME, new File(Constants.FILE_PATH));
-        } catch (AmazonServiceException e) {
+            sequence++;
+            String objectKey = String.format("%030d", sequence);
+            Region region = Region.US_EAST_1;
+            putS3Object(s3, bucketName+"/"+readerId, objectKey, payload);
+        } catch (Exception e) {
              logger.error("Exception:{}", e);
+             throw e;
+        }
+    }
+    public static  String putS3Object(S3Client s3, String bucketName, String objectKey, ByteBuffer event) {
+
+        try {
+            ByteArraySegment buf = new ByteArraySegment(ByteBufferUtils.slice(event, event.arrayOffset(), event.position()));
+            PutObjectResponse response = s3.putObject(PutObjectRequest.builder()
+                            .bucket(bucketName)
+                            .key(objectKey)
+                            .build(),
+                    RequestBody.fromByteBuffer(event));
+
+            return response.eTag();
+
+        } catch (S3Exception e) {
+             logger.error("Exception: {}", e);
+             throw e;
         }
     }
 
@@ -257,7 +295,29 @@ public class Reader {
         this.stream = stream;
         return this;
     }
+   
+    public Reader withAWSCredentials(String key, String secret, String regionName, String bucketName) {
+        this.key = key;
+        this.secret = secret;
+        this.regionName = regionName;
+        this.bucketName = bucketName;
+        AwsBasicCredentials awsCreds = AwsBasicCredentials.create(key, secret);
+        this.s3 = S3Client.builder()
+                .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
+                .region(Region.US_EAST_1)
+                .build();
+        return this;
+    }
 
+    public Reader withPravegaProperties(String scopeName, String streamName, String controllerUriText, String username, String password, Integer numberOfSegments) {
+        this.scopeName = scopeName;
+        this.streamName = streamName;
+        this.controllerUriText = controllerUriText;
+        this.username = username;
+        this.password = password;
+        this.numberOfSegments = numberOfSegments;
+        return this;
+    }
 
     public ReaderGroup getReaderGroup() {
         return readerGroup;
@@ -299,6 +359,12 @@ public class Reader {
     @FunctionalInterface
     public interface Action<T>{
         T execute() throws Exception;
+    }
+
+    private static ByteBuffer getRandomByteBuffer(int size) throws IOException {
+        byte[] b = new byte[size];
+        new Random().nextBytes(b);
+        return ByteBuffer.wrap(b);
     }
 
 }
