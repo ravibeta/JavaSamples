@@ -103,8 +103,8 @@ public class Reader {
                               return eventStreamReader.readNextEvent(1000);
                        }
                     }, numRetries, retryMillis, true);
-                    lastPosition = result.getPosition();
                     if (result != null && result.isCheckpoint() == false && result.getEvent() != null) {
+                        lastPosition = result.getPosition();
                         afterRead(result.getEvent());
                     }
                 }
