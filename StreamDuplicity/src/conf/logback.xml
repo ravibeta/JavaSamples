@@ -43,4 +43,7 @@
 
     <logger name="com.dellemc.pravega.app.StreamDuplicity" level="INFO"/>
     <logger name="com.dellemc.pravega.app.Reader" level="INFO"/>
+    <logger name="io.pravega.client" level="ERROR" />
+    <logger name="io.pravega.common" level="ERROR" />
+    <logger name="io.pravega.shared" level="ERROR" />
 </configuration>

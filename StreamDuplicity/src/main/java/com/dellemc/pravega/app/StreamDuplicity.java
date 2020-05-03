@@ -1,6 +1,7 @@
 package com.dellemc.pravega.app;
 
 import io.pravega.common.Exceptions;
+import io.pravega.common.concurrent.Futures;
 import io.pravega.client.ClientConfig;
 import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.Stream;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
@@ -46,8 +48,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.Optional;
 import java.util.function.Function;
+import static io.pravega.common.concurrent.ExecutorServiceHelpers.newScheduledThreadPool;
 
 
 public class StreamDuplicity {
@@ -56,7 +60,7 @@ public class StreamDuplicity {
     private static ReaderGroup readerGroup;
     private static ReaderGroupManager readerGroupManager;
     private static int readerNum = 1;
-    private static int numRetries = 0;
+    private static int numRetries = 1;
     private static int retryMillis = 100; 
     private static boolean restartable = false;
     private static long segment = 0L;
@@ -72,7 +76,39 @@ public class StreamDuplicity {
     private static String password;
     private static Integer numberOfSegments;
 
+    private static MessageClient messageClient = new MessageClient();
+    private static ScheduledExecutorService backgroundExecutor = newScheduledThreadPool(1, String.format("Restarter"));
+
     public static void main(String argv[]) throws Exception {
+        Boolean standalone = Boolean.valueOf(System.getenv().getOrDefault("STANDALONE", prop.getProperty("standalone")));
+        if (standalone) {
+            run();
+            System.exit(0);
+        }
+
+        try {
+            Supplier<Boolean> restartable = () -> true;
+            Futures.loop(restartable, () -> {
+                return Futures.delayedTask(() -> {
+                    try {
+                        if (messageClient.getRestartReader()) {
+                            logger.info("reloading configuration and restarting reader");
+                            run();
+                        }
+                    } catch(Exception e) {
+                        logger.error("Reader exception: {}", e);
+                    }
+                    return null;
+                }, Duration.ofMillis(10000), backgroundExecutor);
+            }, backgroundExecutor);
+        } catch (Exception e) {
+            logger.error("Exception:{}", e);
+            System.exit(0);
+        }
+    }
+
+
+    private static void run() throws Exception {
         readProperties();
         StreamConfiguration streamConfig = StreamConfiguration.builder()
                 .scalingPolicy(ScalingPolicy.fixed(numberOfSegments))
@@ -80,7 +116,7 @@ public class StreamDuplicity {
         ClientConfig clientConfig = ClientConfig.builder()
             .credentials(adminCredentials())
             .controllerURI(URI.create(controllerUriText)).build();
-        clientFactory = EventStreamClientFactory.withScope(scopeName, clientConfig);
+        EventStreamClientFactory clientFactory = EventStreamClientFactory.withScope(scopeName, clientConfig);
         if (readerGroupManager == null) {
             readerGroupManager = ReaderGroupManager.withScope(scopeName, clientConfig);
         }
@@ -92,32 +128,12 @@ public class StreamDuplicity {
                 .withAWSCredentials(key, secret, region, bucketName)
                 .withPravegaProperties(scopeName, streamName, controllerUriText, username, password, numberOfSegments)
                 .withStream(streamName);
-
         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                reader.start();
         });
         logger.info("Started reader");
         Futures.await(future);
         System.exit(0);
-    }
-
-    private static void writeEvents(EventStreamClientFactory clientFactory, String streamName, int eventNumber) {
-        EventWriterConfig eventWriterConfig = EventWriterConfig.builder()
-                .transactionTimeoutTime(30_000)
-                .build();
-        JavaSerializer<String> SERIALIZER = new JavaSerializer<String>();
-        EventStreamWriter<String> writer = clientFactory.createEventWriter(streamName, SERIALIZER, eventWriterConfig);
-        String payload = "Hello World Lady Ada Lovelace " + String.valueOf(eventNumber);
-        CompletableFuture<Void> writeEvent = writer.writeEvent(UUID.randomUUID().toString(), payload);
-        int sizeOfEvent = io.netty.buffer.Unpooled.wrappedBuffer(SERIALIZER.serialize(payload)).readableBytes();
-        logger.info("Wrote event of size:{}", sizeOfEvent);
-        Exceptions.handleInterrupted(() -> {
-            try {
-                writeEvent.get(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-            } catch (Exception e) {
-                // Not handled here.
-            }
-        });
     }
 
     private static void makeReaderGroup(String readerGroupName) {

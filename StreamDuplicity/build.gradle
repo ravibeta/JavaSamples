@@ -3,23 +3,29 @@ buildscript {
         jcenter()
         mavenLocal()
         mavenCentral()
-        // maven {
-        //     url "https://repository.apache.org/snapshots"
-        // }
+        maven {
+            url "https://repo1.maven.org/maven2"
+        }
     }
+    dependencies {
+        classpath "com.github.jengelman.gradle.plugins:shadow:${shadowJarVersion}"
+        classpath "com.palantir.gradle.docker:gradle-docker:${palantirDockerPluginVersion}",
+                  "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
+    }
+
 }
 
 plugins {
-    // Apply the java plugin to add support for Java
     id 'java'
-
-    // Apply the application plugin to add support for building an application
     id 'application'
-
     id 'idea'
-    id "io.freefair.lombok" version "3.1.0"
+    id 'io.freefair.lombok' version '3.1.0'
     id 'com.gradle.build-scan' version '2.0.2'
+    id 'com.palantir.docker' version '0.25.0'
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
+    id 'org.jetbrains.kotlin.jvm' version '1.3.72'
 }
+
 
 group='com.dellemc.pravega.app'
 version = '1.0'
@@ -32,12 +38,6 @@ repositories {
         jcenter()
         mavenLocal()
         mavenCentral()
-        // maven {
-        //     url "https://repository.apache.org/snapshots"
-        // }
-        // maven {
-        //    url "https://oss.sonatype.org/content/repositories/snapshots"
-        // }
         maven {
             url "https://oss.jfrog.org/artifactory/oss-release-local"
         }
@@ -48,20 +48,57 @@ repositories {
 
 sourceCompatibility = 1.8
 dependencies {
-    compile "io.pravega:pravega-client:0.6.0",
-            "io.pravega:pravega-common:0.6.0",
-            "io.pravega:pravega-keycloak-client:0.6.0",
+    compile "io.pravega:pravega-client:${connectorVersion}"
+    compile "io.pravega:pravega-common:${connectorVersion}",
+            "io.pravega:pravega-keycloak-client:${connectorVersion}",
             "commons-cli:commons-cli:1.4"
     implementation platform('software.amazon.awssdk:bom:2.13.0')
     implementation 'software.amazon.awssdk:s3'
-    // compile group: 'io.pravega', name: 'pravega-connectors-flink-1.7_2.12', version: '0.6.0'
-    // compile "org.apache.flink:flink-core:1.7.2"
-    // compile group: 'org.apache.flink', name: 'flink-streaming-java_2.12', version: '1.7.2'
-    // compile "org.apache.flink:flink-java-examples:0.8.1"
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.24'
     compile group: 'org.slf4j', name:'slf4j-api', version: '1.7.24'
     compile group: 'com.jayway.jsonpath', name:'json-path', version:'2.1.0'
+    compile "org.apache.commons:commons-text:${commonsTextVersion}",
+            "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}",
+            "org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}",
+            "com.fasterxml.jackson.module:jackson-module-kotlin:${kotlinJacksonModule}",
+            "javax.inject:javax.inject:1",
+            "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}",
+            "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}",
+            "com.google.inject:guice:4.0",
+            "io.dropwizard:dropwizard-core:${dropWizardVersion}",
+            "io.dropwizard:dropwizard-configuration:${dropWizardVersion}"
+    compile   "javax.xml.bind:jaxb-api:2.3.1"
     testCompile "junit:junit:4.+"
+}
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
+sourceCompatibility = 1.8
+
+sourceSets {
+    intgTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+        }
+    }
+}
+
+idea {
+    module {
+        testSourceDirs += file('src/intgTest/java')
+        testSourceDirs += file('src/intgTest/resources')
+    }
 }
 
 String classpathVar = configurations.compile.collect { it.getName() }.join(' ');
@@ -107,3 +144,40 @@ publishing {
     }
 }
 
+
+project.ext.buildVersion = computeVersion()
+
+def computeVersion() {
+    return "0.1-SNAPSHOT"
+}
+
+configurations.all {
+    // exclude group: "io.netty", module:"netty-all"
+    // exclude group: "org.apache.logging.log4j", module: "log4j-slf4j-impl"
+    //  exclude group: "org.slf4j", module: "log4j-over-slf4j"
+}
+
+configurations {
+    intgTestCompile.extendsFrom testCompile
+    intgTestRuntime.extendsFrom testRuntime
+}
+
+// task integrationTest(type: Test) {
+//    description = "Runs Integration Tests"
+//    testClassesDir = sourceSets.intgTest.output.classesDir
+//    classpath += sourceSets.intgTest.runtimeClasspath
+//    outputs.upToDateWhen { false }
+// }
+
+shadowJar {
+   mergeServiceFiles()
+   baseName = 'streamduplicity'
+   version = buildVersion
+}
+
+docker {
+    files shadowJar.outputs, 'dist/'
+    name "${dockerRegistry}/${dockerImageName}:${buildVersion}"
+    dockerfile file('docker/Dockerfile')
+    buildArgs([BUILD_VERSION: project.buildVersion])
+}

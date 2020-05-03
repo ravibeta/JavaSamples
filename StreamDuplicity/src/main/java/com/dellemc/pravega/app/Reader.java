@@ -56,7 +56,7 @@ import java.util.function.Function;
 import static io.pravega.common.concurrent.ExecutorServiceHelpers.newScheduledThreadPool;
 
 public class Reader {
-    private static final Logger logger = LoggerFactory.getLogger(StreamDuplicity.class);
+    private static final Logger logger = LoggerFactory.getLogger(Reader.class);
 
     private final ByteBufferSerializer SERIALIZER = new ByteBufferSerializer();
 
@@ -93,20 +93,24 @@ public class Reader {
     public void start() {
         try {
             beforeRead();
+            int numNullEvents = 0;
             while (!stopped) {
                 try {
-             
                     EventRead<ByteBuffer> result = null;
                     doWithRetry(new Action<EventRead<ByteBuffer>>() {
                        @Override
                        public EventRead<ByteBuffer> execute() throws Exception {
-                              return eventStreamReader.readNextEvent(1000);
+                              return eventStreamReader.readNextEvent(4000);
                        }
                     }, numRetries, retryMillis, true);
                     if (result != null && result.isCheckpoint() == false && result.getEvent() != null) {
                         lastPosition = result.getPosition();
                         afterRead(result.getEvent());
+                    } else { 
+                        logger.debug("result={}", result);
                     }
+                    if (result == null) numNullEvents++;
+                    if (numNullEvents > 3) break;
                 }
                 catch (ReinitializationRequiredException e) {
                     // Expected
@@ -148,8 +152,8 @@ public class Reader {
 
         readerId = readerGroup.getScope() + "-" +  stream + "-" + UUID.randomUUID();
         eventStreamReader = clientFactory.createReader(readerId, readerGroup.getGroupName(), SERIALIZER, readerConfig);
-
-        logger.info("Added Reader {} To ReaderGroup {}", readerId, readerGroup.getGroupName());
+        // readerGroup.getOnlineReaders().stream().forEach(t->{logger.info("{} has reader {}", readerGroup.getGroupName(), readerId);});
+        logger.info("Added Reader {} To ReaderGroup {}", readerId, readerGroup);
     }
 
     private void beforeRead() {
@@ -160,18 +164,19 @@ public class Reader {
                 } catch(Exception e) {
                    logger.error("An exception occurred while getting next checkpoint: {}", e);
                 }
+                // reset ReaderGroup
+                ReaderGroupConfig.ReaderGroupConfigBuilder builder = ReaderGroupConfig.builder();
+                StreamCut streamCut = getStreamCut(readerGroup.getScope(), stream, segment, position);
+                logger.debug("streamCut={}", streamCut);
+                builder = builder.stream(readerGroup.getScope() + "/" + stream, streamCut, StreamCut.UNBOUNDED);
+                if (cpResult != null) {
+                    builder = builder.startFromCheckpoint(cpResult);
+                    logger.info("reader {} building from checkpoint", readerId);
+                }
+                ReaderGroupConfig resetConfig = builder.build();
+                logger.info("Resetting ReaderGroup {} at position {}", readerGroup.getGroupName(), lastPosition);
+                readerGroup.resetReaderGroup(resetConfig);
             }
-            // reset ReaderGroup
-            ReaderGroupConfig.ReaderGroupConfigBuilder builder = ReaderGroupConfig.builder();
-            StreamCut streamCut = getStreamCut(readerGroup.getScope(), stream, segment, position);
-            builder = builder.stream(readerGroup.getScope() + "/" + stream, streamCut, StreamCut.UNBOUNDED);
-            if (cpResult != null) {
-                builder = builder.startFromCheckpoint(cpResult);
-                logger.info("reader {} building from checkpoint", readerId);
-            }
-            ReaderGroupConfig resetConfig = builder.build();
-            logger.info("Resetting ReaderGroup {} at position {}", readerGroup.getGroupName(), lastPosition);
-            readerGroup.resetReaderGroup(resetConfig);
             prepare();
     }
 
@@ -191,7 +196,7 @@ public class Reader {
 
     private void afterRead(ByteBuffer payload) {
         logger.info("Reader read event of size: {}", payload.capacity());
-        logger.debug(StandardCharsets.UTF_8.decode(payload).toString());
+        // logger.debug(StandardCharsets.UTF_8.decode(payload).toString());
         try {
             sequence++;
             String objectKey = String.format("%030d", sequence);

@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "streamduplicity-service"
+spec:
+  selector:
+    app: streamduplicity
+    test: "streamduplicity"
+    type: manager
+  ports:
+  - protocol: TCP
+    port: 2020
+    targetPort: 2020

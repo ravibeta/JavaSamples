@@ -19,13 +19,26 @@
          comment these out if you want full debug logs (will be huge)
          WARNING: at debug level, if the following lines are not active,
                   object *data* will be logged in byte-hex ([0x9a]...) -->
-    <logger name="com.dellemc.pravega.app" additivity="false">
+    <logger name="com.dellemc.pravega.app.StreamDuplicity" additivity="false">
         <appender-ref ref="infoAppender"/>
     </logger>
-
+    <logger name="com.dellemc.pravega.app.Reader" additivity="false">
+        <appender-ref ref="infoAppender"/>
+    </logger>
+    <logger name="io.pravega.client" additivity="false">
+        <appender-ref ref="mainAppender"/>
+    </logger>
+    <logger name="io.pravega.common" additivity="false">
+        <appender-ref ref="mainAppender"/>
+    </logger>
+    <logger name="io.pravega.shared" additivity="false">
+        <appender-ref ref="mainAppender"/>
+    </logger>
+<!--
         <root>
                 <priority value="ERROR" />
                 <appender-ref ref="mainAppender" />
         </root>
+-->
 </log4j:configuration>
 

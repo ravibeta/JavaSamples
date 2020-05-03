@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "streamduplicity-config"
+data:
+    bucket_name = b66
+    aws_access_key_id = 
+    aws_secret_access_key = 
+    aws_region = us-east-2
+    scope_name = project58
+    stream_name  = logstream2
+    controller_uri =  tcp://10.0.0.4:9090
+    pravega_username =  
+    pravega_password =  
+    number_of_segments =  1
+

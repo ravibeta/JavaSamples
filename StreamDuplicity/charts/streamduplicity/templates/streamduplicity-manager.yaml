@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "streamduplicity-manager"
+  labels:
+    app: pravega-longevity
+    test: "streamduplicity"
+    type: manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pravega-longevity
+      test: "streamduplicity"
+      type: manager
+  template:
+    metadata:
+      labels:
+        app: pravega-longevity
+        test: "streamduplicity"
+        type: manager
+    spec:
+      containers:
+        - name: "streamduplicity-manager"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 2020
+          volumeMounts:
+            - name: "streamduplicity-config"
+              mountPath: /etc/config
+            - name: test-storage
+              mountPath: /data/test
+              readOnly: false
+          env:
+            - name: PRAVEGA_CONTROLLER_URI
+              value: "{{ .Values.pravega_longevity_test.controller_uri }}"
+            - name: API_HOST
+              value: http://streamduplicity-manager:2020
+          command: ["sh", "-c"]
+          args:
+          - cp //etc//config//..data//config.properties //data//test//config.properties; chmod 755 //data//test//config.properties; /app/bin/manager;
+      volumes:
+        - name: "streamduplicity-config"
+          configMap:
+            name: "streamduplicity-config"
+            items:
+            - key: "streamduplicity"
+              path: config.properties
+        - name: test-storage
+          emptyDir: {}
