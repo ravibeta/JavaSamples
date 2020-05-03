@@ -39,7 +39,7 @@ spec:
               value: http://streamduplicity-manager:2020
           command: ["sh", "-c"]
           args:
-          - cp //etc//config//..data//config.properties //data//test//config.properties; chmod 755 //data//test//config.properties; /app/bin/manager;
+          - cp //etc//config//..data//config.properties //data//config//config.properties; chmod 755 //data//config//config.properties; java -jar /app/lib/streamduplicity.jar
       volumes:
         - name: "streamduplicity-config"
           configMap:

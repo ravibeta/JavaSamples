@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.InputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -45,6 +46,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -56,6 +58,7 @@ import static io.pravega.common.concurrent.ExecutorServiceHelpers.newScheduledTh
 
 public class StreamDuplicity {
     private static final Logger logger = LoggerFactory.getLogger(StreamDuplicity.class);
+    private static final String CONFIG_PROPERTIES_PATH = "/data/config/config.properties";
     private static EventStreamClientFactory clientFactory;
     private static ReaderGroup readerGroup;
     private static ReaderGroupManager readerGroupManager;
@@ -89,9 +92,10 @@ public class StreamDuplicity {
         logger.info("Starting daemon mode");
         try {
             Supplier<Boolean> restartable = () -> true;
-            Futures.loop(restartable, () -> {
+            CompletableFuture loop = Futures.loop(restartable, () -> {
+                logger.info("Reader task run started");
                 try {
-                Futures.delayedTask(() -> {
+                  CompletableFuture future = Futures.delayedTask(() -> {
                     try {
                         if (messageClient.getRestartReader()) {
                             logger.info("reloading configuration and restarting reader");
@@ -100,13 +104,17 @@ public class StreamDuplicity {
                     } catch(Exception e) {
                         logger.error("Reader exception: {}", e);
                     }
+                    logger.info("Reader task finished run");
                     return null;
-                }, Duration.ofMillis(10000), backgroundExecutor).get();
-               } catch (InterruptedException | ExecutionException e) {
+                  }, Duration.ofMillis(10000), backgroundExecutor);
+                  Futures.await(future);
+               } catch (Exception e) {
                     logger.error("reader task interrupted: {}", e);
                }
+               logger.info("Reader task run completed");
                return null;
             }, backgroundExecutor);
+          Futures.await(loop);
         } catch (Exception e) {
             logger.error("Exception:{}", e);
             System.exit(0);
@@ -194,11 +202,11 @@ public class StreamDuplicity {
     // }
 
     public static void readProperties() throws IOException {
-        try (InputStream input = StreamDuplicity.class.getClassLoader().getResourceAsStream("config.properties")) {
+        try (InputStream input =  new FileInputStream(CONFIG_PROPERTIES_PATH)) {
             Properties prop = new Properties();
             if (input == null) {
                 throw new RuntimeException("Without config properties, the source and destination for this data transfer are not known.");
-            }
+            } 
             prop.load(input);
             bucketName = System.getenv().getOrDefault("BUCKET_NAME", prop.getProperty("bucket_name"));
             key = System.getenv().getOrDefault("AWS_ACCESS_KEY_ID", prop.getProperty("aws_access_key_id"));
