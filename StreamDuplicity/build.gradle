@@ -3,9 +3,9 @@ buildscript {
         jcenter()
         mavenLocal()
         mavenCentral()
-        maven {
-            url "https://repository.apache.org/snapshots"
-        }
+        // maven {
+        //     url "https://repository.apache.org/snapshots"
+        // }
     }
 }
 
@@ -32,12 +32,12 @@ repositories {
         jcenter()
         mavenLocal()
         mavenCentral()
-        maven {
-            url "https://repository.apache.org/snapshots"
-        }
-        maven {
-            url "https://oss.sonatype.org/content/repositories/snapshots"
-        }
+        // maven {
+        //     url "https://repository.apache.org/snapshots"
+        // }
+        // maven {
+        //    url "https://oss.sonatype.org/content/repositories/snapshots"
+        // }
         maven {
             url "https://oss.jfrog.org/artifactory/oss-release-local"
         }
@@ -54,10 +54,10 @@ dependencies {
             "commons-cli:commons-cli:1.4"
     implementation platform('software.amazon.awssdk:bom:2.13.0')
     implementation 'software.amazon.awssdk:s3'
-    compile group: 'io.pravega', name: 'pravega-connectors-flink-1.7_2.12', version: '0.6.0'
-    compile "org.apache.flink:flink-core:1.7.2"
-    compile group: 'org.apache.flink', name: 'flink-streaming-java_2.12', version: '1.7.2'
-    compile "org.apache.flink:flink-java-examples:0.8.1"
+    // compile group: 'io.pravega', name: 'pravega-connectors-flink-1.7_2.12', version: '0.6.0'
+    // compile "org.apache.flink:flink-core:1.7.2"
+    // compile group: 'org.apache.flink', name: 'flink-streaming-java_2.12', version: '1.7.2'
+    // compile "org.apache.flink:flink-java-examples:0.8.1"
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.24'
     compile group: 'org.slf4j', name:'slf4j-api', version: '1.7.24'
     compile group: 'com.jayway.jsonpath', name:'json-path', version:'2.1.0'

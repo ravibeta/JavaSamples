@@ -11,12 +11,6 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.Stream;
 import io.pravega.client.stream.StreamConfiguration;
-import io.pravega.connectors.flink.FlinkPravegaReader;
-import io.pravega.connectors.flink.FlinkPravegaWriter;
-import io.pravega.connectors.flink.PravegaConfig;
-import io.pravega.connectors.flink.PravegaWriterMode;
-import io.pravega.connectors.flink.PravegaEventRouter;
-import io.pravega.connectors.flink.serialization.PravegaSerialization;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.stream.Checkpoint;
 import io.pravega.client.stream.EventRead;
@@ -36,30 +30,6 @@ import io.pravega.client.stream.impl.JavaSerializer;
 import io.pravega.client.stream.Serializer;
 import io.pravega.common.util.ByteArraySegment;
 import io.pravega.common.util.ByteBufferUtils;
-import org.apache.flink.api.common.functions.AggregateFunction;
-import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.functions.RuntimeContext;
-import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.tuple.Tuple;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.streaming.api.CheckpointingMode;
-import org.apache.flink.streaming.api.collector.selector.OutputSelector;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSink;
-import org.apache.flink.streaming.api.datastream.IterativeStream;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.TimestampExtractor;
-import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
-import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
-import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
-import org.apache.flink.streaming.api.windowing.assigners.EventTimeSessionWindows;
-import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
-import org.apache.flink.util.Collector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;
@@ -176,7 +146,7 @@ public class Reader {
         ReaderConfig readerConfig = ReaderConfig.builder()
             .build();
 
-        readerId = UUID.randomUUID() + "-" + readerGroup.getScope() + "-" +  stream;
+        readerId = readerGroup.getScope() + "-" +  stream + "-" + UUID.randomUUID();
         eventStreamReader = clientFactory.createReader(readerId, readerGroup.getGroupName(), SERIALIZER, readerConfig);
 
         logger.info("Added Reader {} To ReaderGroup {}", readerId, readerGroup.getGroupName());
@@ -225,13 +195,13 @@ public class Reader {
         try {
             sequence++;
             String objectKey = String.format("%030d", sequence);
-            Region region = Region.US_EAST_1;
-            putS3Object(s3, bucketName+"/"+readerId, objectKey, payload);
+            putS3Object(s3, bucketName, scopeName+"/" + streamName + "/" + readerId + "/" + objectKey, payload);
         } catch (Exception e) {
              logger.error("Exception:{}", e);
              throw e;
         }
     }
+
     public static  String putS3Object(S3Client s3, String bucketName, String objectKey, ByteBuffer event) {
 
         try {
@@ -304,7 +274,7 @@ public class Reader {
         AwsBasicCredentials awsCreds = AwsBasicCredentials.create(key, secret);
         this.s3 = S3Client.builder()
                 .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
-                .region(Region.US_EAST_1)
+                .region(Region.of(regionName))
                 .build();
         return this;
     }
