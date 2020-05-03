@@ -75,21 +75,23 @@ public class StreamDuplicity {
     private static String username;
     private static String password;
     private static Integer numberOfSegments;
+    private static Boolean standalone;
 
     private static MessageClient messageClient = new MessageClient();
     private static ScheduledExecutorService backgroundExecutor = newScheduledThreadPool(1, String.format("Restarter"));
 
     public static void main(String argv[]) throws Exception {
-        Boolean standalone = Boolean.valueOf(System.getenv().getOrDefault("STANDALONE", prop.getProperty("standalone")));
-        if (standalone) {
+        readProperties();
+        if (standalone == true) {
             run();
             System.exit(0);
         }
-
+        logger.info("Starting daemon mode");
         try {
             Supplier<Boolean> restartable = () -> true;
             Futures.loop(restartable, () -> {
-                return Futures.delayedTask(() -> {
+                try {
+                Futures.delayedTask(() -> {
                     try {
                         if (messageClient.getRestartReader()) {
                             logger.info("reloading configuration and restarting reader");
@@ -99,7 +101,11 @@ public class StreamDuplicity {
                         logger.error("Reader exception: {}", e);
                     }
                     return null;
-                }, Duration.ofMillis(10000), backgroundExecutor);
+                }, Duration.ofMillis(10000), backgroundExecutor).get();
+               } catch (InterruptedException | ExecutionException e) {
+                    logger.error("reader task interrupted: {}", e);
+               }
+               return null;
             }, backgroundExecutor);
         } catch (Exception e) {
             logger.error("Exception:{}", e);
@@ -109,7 +115,6 @@ public class StreamDuplicity {
 
 
     private static void run() throws Exception {
-        readProperties();
         StreamConfiguration streamConfig = StreamConfiguration.builder()
                 .scalingPolicy(ScalingPolicy.fixed(numberOfSegments))
                 .build();
@@ -205,7 +210,8 @@ public class StreamDuplicity {
             username = System.getenv().getOrDefault("USERNAME", prop.getProperty("pravega_username"));
             password = System.getenv().getOrDefault("PASSWORD", prop.getProperty("pravega_password"));
             numberOfSegments = Integer.valueOf(System.getenv().getOrDefault("NUMBER_OF_SEGMENTS", prop.getProperty("number_of_segments")));
-            logger.info("bucketName:{}, region:{}, scopeName:{}, streamName:{}, controllerUriText: {}, username:{}, password: {}, numberOfSegments: {}", bucketName, region, scopeName, streamName, controllerUriText, username, password, String.valueOf(numberOfSegments));
+            standalone = Boolean.valueOf(System.getenv().getOrDefault("STANDALONE", prop.getProperty("standalone")));
+            logger.info("bucketName:{}, region:{}, scopeName:{}, streamName:{}, controllerUriText: {}, username:{}, password: {}, numberOfSegments: {}, standalone: {}", bucketName, region, scopeName, streamName, controllerUriText, username, password, String.valueOf(numberOfSegments), String.valueOf(standalone));
         } catch (IOException e) {
             logger.info("configuration properties file not found: {}", e);
             throw e;
