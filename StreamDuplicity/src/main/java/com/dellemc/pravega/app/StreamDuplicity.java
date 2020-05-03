@@ -129,7 +129,7 @@ public class StreamDuplicity {
         ClientConfig clientConfig = ClientConfig.builder()
             .credentials(adminCredentials())
             .controllerURI(URI.create(controllerUriText)).build();
-        EventStreamClientFactory clientFactory = EventStreamClientFactory.withScope(scopeName, clientConfig);
+        clientFactory = EventStreamClientFactory.withScope(scopeName, clientConfig);
         if (readerGroupManager == null) {
             readerGroupManager = ReaderGroupManager.withScope(scopeName, clientConfig);
         }

@@ -96,8 +96,8 @@ public class Reader {
             int numNullEvents = 0;
             while (!stopped) {
                 try {
-                    EventRead<ByteBuffer> result = null;
-                    doWithRetry(new Action<EventRead<ByteBuffer>>() {
+                    EventRead<ByteBuffer> result;
+                    result = doWithRetry(new Action<EventRead<ByteBuffer>>() {
                        @Override
                        public EventRead<ByteBuffer> execute() throws Exception {
                               return eventStreamReader.readNextEvent(4000);
@@ -110,7 +110,10 @@ public class Reader {
                         logger.debug("result={}", result);
                     }
                     if (result == null) numNullEvents++;
-                    if (numNullEvents > 3) break;
+                    if (numNullEvents > 3) {
+                        logger.warn("A stream is not expected to have sequential null events.");
+                        break;
+                    }
                 }
                 catch (ReinitializationRequiredException e) {
                     // Expected
@@ -147,13 +150,12 @@ public class Reader {
     }
 
     private void prepare() {
+        readerId = readerGroup.getScope() + "-" +  stream + "-" + UUID.randomUUID();
         ReaderConfig readerConfig = ReaderConfig.builder()
             .build();
-
-        readerId = readerGroup.getScope() + "-" +  stream + "-" + UUID.randomUUID();
         eventStreamReader = clientFactory.createReader(readerId, readerGroup.getGroupName(), SERIALIZER, readerConfig);
         // readerGroup.getOnlineReaders().stream().forEach(t->{logger.info("{} has reader {}", readerGroup.getGroupName(), readerId);});
-        logger.info("Added Reader {} To ReaderGroup {}", readerId, readerGroup);
+        logger.info("Added Reader {} To ReaderGroup {}", eventStreamReader, readerGroup);
     }
 
     private void beforeRead() {
@@ -304,7 +306,11 @@ public class Reader {
 
         for (int i = retryCount == 0 ? -1 : 0; i < retryCount; i++) {
             try {
-                return action.execute();
+                T result  = action.execute();
+                if (i > 0) {
+                    logger.debug("retry succeeded after {} attempts", String.valueOf(i));
+                }
+                return result;
             } catch (final Exception e) {
                 cause = e;
                 if (cause instanceof TruncatedDataException) {
