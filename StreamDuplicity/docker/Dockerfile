@@ -1,7 +1,13 @@
-FROM gradle:5.4.1-jdk8
-ADD bin/ /app/bin/
-ADD conf/ /app/conf/
-ADD build/resources/main/config.properties /app/conf/config.properties
-ADD build/resources/main/config.properties /app/lib/config.properties
+FROM gradle:5.4.1-jdk8 as gradlebuilder
 ARG BUILD_VERSION
-ADD streamduplicity-${BUILD_VERSION}-all.jar /app/lib/streamduplicity.jar
+CMD mkdir -p /app
+CMD mkdir -p /app/lib
+CMD mkdir -p /app/conf
+CMD mkdir -p /data/config
+WORKDIR /app
+COPY ./../build/libs /app/lib
+COPY ./../build/resources/main /app/conf
+COPY ./../src/main/resources/config.properties /app/conf/config.properties
+COPY ./../src/main/resources/config.properties /data/config/config.properties
+COPY ./../build/libs/streamduplicity-${BUILD_VERSION}-all.jar /app/lib/streamduplicity.jar
+COPY ./../src/conf/logback.xml /app/conf/logback.xml
