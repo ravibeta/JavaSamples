@@ -1,5 +1,6 @@
 package com.dellemc.pravega.app;
 
+import com.google.common.base.Strings;
 import io.pravega.common.Exceptions;
 import io.pravega.common.concurrent.Futures;
 import io.pravega.client.ClientConfig;
@@ -220,6 +221,15 @@ public class StreamDuplicity {
             numberOfSegments = Integer.valueOf(System.getenv().getOrDefault("NUMBER_OF_SEGMENTS", prop.getProperty("number_of_segments")));
             standalone = Boolean.valueOf(System.getenv().getOrDefault("STANDALONE", prop.getProperty("standalone")));
             logger.info("bucketName:{}, region:{}, scopeName:{}, streamName:{}, controllerUriText: {}, username:{}, password: {}, numberOfSegments: {}, standalone: {}", bucketName, region, scopeName, streamName, controllerUriText, username, password, String.valueOf(numberOfSegments), String.valueOf(standalone));
+            if (Strings.isNullOrEmpty(key)) throw new IllegalArgumentException("Please specify proper aws_access_key_id");
+            if (Strings.isNullOrEmpty(secret)) throw new IllegalArgumentException("Please specify proper aws_secret_access_key");
+            if (Strings.isNullOrEmpty(region)) throw new IllegalArgumentException("Please specify proper aws_region such as us-east-1 or us-east-2");
+            if (Strings.isNullOrEmpty(scopeName)) throw new IllegalArgumentException("Please specify existing scope_name from stream store");
+            if (Strings.isNullOrEmpty(streamName)) throw new IllegalArgumentException("Please specify existing stream_name from stream store");
+            if (Strings.isNullOrEmpty(controllerUriText)) throw new IllegalArgumentException("Please specify existing controller_uri from stream store");
+            if (Strings.isNullOrEmpty(username)) throw new IllegalArgumentException("Please specify existing admin credentials from stream store");
+            if (Strings.isNullOrEmpty(password)) throw new IllegalArgumentException("Please specify existing admin credentials from stream store");
+            if (numberOfSegments < 1) numberOfSegments = 1;
         } catch (IOException e) {
             logger.info("configuration properties file not found: {}", e);
             throw e;
