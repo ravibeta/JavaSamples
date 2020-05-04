@@ -52,7 +52,8 @@ The **StreamDuplicity** server listens on port `2020` to requests made to `/v1/d
 | GET    | /restart/writer | N/A     | **200** Accepted + Boolean |
 | POST   | /restart/reader  | N/A     | **200** Accepted |
 
-If you would like to run the standalone program without hosting on this on Kubernetes, you could set the following environment variables:
+If you would like to run the standalone program without hosting on this on Kubernetes, you could set some of the following environment variables. Note only the first three are required to configure the destination.
+
 |    EnvVar    |    config.properties    |        Description              |
 |--------------|-------------------------|---------------------------------|
 | BUCKET_NAME  |    bucket_name          |  Specify just the name of the bucket, no ARN, or FQN hostname |
@@ -73,7 +74,7 @@ If you encounter issues, review the [troubleshooting docs], [file an issue], or 
 
 ## Contributing
 
-If you are ready to jump in and test, add code, or help with documentation, follow the instructions on our [Start contributing] documentation for guidance on how to setup Velero for development.
+If you are ready to jump in and test, add code, or help with documentation, follow the instructions on our [Start contributing] documentation for guidance on how to setup StreamDuplicity for development.
 
 ## Changelog
 [1] initial commit
