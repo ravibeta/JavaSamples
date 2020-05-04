@@ -176,8 +176,18 @@ shadowJar {
 }
 
 docker {
-    files shadowJar.outputs, 'dist/'
     name "${dockerRegistry}/${dockerImageName}:${buildVersion}"
-    dockerfile file('docker/Dockerfile')
+    tag 'dev', "${dockerRegistry}/${dockerImageName}:${buildVersion}"
+    dockerfile file('Dockerfile')
+    // inputDir = file('.')
+    files shadowJar.outputs, 'src/main/resources/config.properties'
     buildArgs([BUILD_VERSION: project.buildVersion])
+    copySpec.from("build/libs").into("/app/lib")
+    copySpec.from("build/resources/main").into("/app/conf")
+    copySpec.from("src/main/resources/config.properties").into("/app/conf/config.properties")
+    copySpec.from("src/main/resources/config.properties").into("/data/config/config.properties")
+    copySpec.from("build/libs/streamduplicity-${buildVersion}-all.jar").into("/app/lib/streamduplicity.jar")
+    copySpec.from("src/conf/logback.xml").into("/app/conf/logback.xml")
+    pull true
+    noCache true
 }
