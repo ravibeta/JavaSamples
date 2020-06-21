@@ -80,6 +80,9 @@ public class StreamDuplicity {
     private static String password;
     private static Integer numberOfSegments;
     private static Boolean standalone;
+    private static String mode;
+    private static String prefix;
+    private static long sequence = 0L;
 
     private static MessageClient messageClient = new MessageClient();
     private static ScheduledExecutorService backgroundExecutor = newScheduledThreadPool(1, String.format("Restarter"));
@@ -92,7 +95,7 @@ public class StreamDuplicity {
         }
         logger.info("Starting daemon mode");
         try {
-            Supplier<Boolean> restartable = () -> true;
+            Supplier<Boolean> restartable = () -> false;
             CompletableFuture loop = Futures.loop(restartable, () -> {
                 logger.info("Reader task run started");
                 try {
@@ -131,22 +134,53 @@ public class StreamDuplicity {
             .credentials(adminCredentials())
             .controllerURI(URI.create(controllerUriText)).build();
         clientFactory = EventStreamClientFactory.withScope(scopeName, clientConfig);
+
         if (readerGroupManager == null) {
             readerGroupManager = ReaderGroupManager.withScope(scopeName, clientConfig);
         }
-        String readerGroupName = "data-transfer-reader-group";
-        makeReaderGroup(readerGroupName);
-        final Reader reader = new Reader()
+        if (mode.toUpperCase().equals("READER")) {
+            if (readerGroupManager == null) {
+                readerGroupManager = ReaderGroupManager.withScope(scopeName, clientConfig);
+            }
+            String readerGroupName = "data-transfer-reader-group";
+            makeReaderGroup(readerGroupName);
+            final Reader reader = new Reader()
                 .withClientFactory(clientFactory)
-                .withReaderGroup(readerGroup, readerNum, numRetries, retryMillis, restartable, segment, position)
+                .withReaderGroup(readerGroup, readerNum, numRetries, retryMillis, false, segment, position)
                 .withAWSCredentials(key, secret, region, bucketName)
                 .withPravegaProperties(scopeName, streamName, controllerUriText, username, password, numberOfSegments)
                 .withStream(streamName);
-        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-               reader.start();
-        });
-        logger.info("Started reader");
-        Futures.await(future);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                   reader.start();
+            });
+            logger.info("Started reader");
+            Futures.await(future);
+        }
+        else if (mode.toUpperCase().equals("WRITER")) {
+            try(StreamManager streamManager = StreamManager.create(URI.create(controllerUriText))) {
+                 streamManager.createScope(scopeName);
+                 streamManager.createStream(scopeName, streamName.replace("-copy","") + "-copy", streamConfig);
+            } catch (Exception e) {
+               log.error("Exception in creating destination stream:", e);
+            }
+            final Writer writer = new Writer()
+                .withClientFactory(clientFactory)
+                .withPrefix(prefix)
+                .withWriterSequence(readerNum, numRetries, retryMillis, false, segment, position, sequence)
+                .withAWSCredentials(key, secret, region, bucketName)
+                .withPravegaProperties(scopeName, streamName, controllerUriText, username, password, numberOfSegments)
+                .withStream(streamName)
+                .withPrefix(prefix);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                   writer.prepare();
+                   writer.start();
+            });
+            logger.info("Started writer");
+            Futures.await(future);
+        }
+        else {
+             throw new IllegalArgumentException("This tool can work only as a reader or writer. Please specify a mode of operation");
+        }
         System.exit(0);
     }
 
@@ -184,20 +218,20 @@ public class StreamDuplicity {
     // }
 
     // private static void writeEvents(EventStreamClientFactory clientFactory, String streamName, int eventNumber) {
-    //    EventWriterConfig eventWriterConfig = EventWriterConfig.builder()
-    //            .transactionTimeoutTime(30_000)
-    //            .build();
-    //    JavaSerializer<String> SERIALIZER = new JavaSerializer<String>();
-    //    EventStreamWriter<String> writer = clientFactory.createEventWriter(streamName, SERIALIZER, eventWriterConfig);
-    //    String payload = "Hello World Lady Ada Lovelace " + String.valueOf(eventNumber);
-    //    CompletableFuture<Void> writeEvent = writer.writeEvent(UUID.randomUUID().toString(), payload);
-    //    int sizeOfEvent = io.netty.buffer.Unpooled.wrappedBuffer(SERIALIZER.serialize(payload)).readableBytes();
-    //    logger.info("Wrote event of size:{}", sizeOfEvent);
-    //    Exceptions.handleInterrupted(() -> {
-    //        try {
+    //     EventWriterConfig eventWriterConfig = EventWriterConfig.builder()
+    //             .transactionTimeoutTime(30_000)
+    //             .build();
+    //     JavaSerializer<String> SERIALIZER = new JavaSerializer<String>();
+    //     EventStreamWriter<String> writer = clientFactory.createEventWriter(streamName, SERIALIZER, eventWriterConfig);
+    //     String payload = "Hello World Lady Ada Lovelace " + String.valueOf(eventNumber);
+    //     CompletableFuture<Void> writeEvent = writer.writeEvent(UUID.randomUUID().toString(), payload);
+    //     int sizeOfEvent = io.netty.buffer.Unpooled.wrappedBuffer(SERIALIZER.serialize(payload)).readableBytes();
+    //     logger.info("Wrote event of size:{}", sizeOfEvent);
+    //     Exceptions.handleInterrupted(() -> {
+    //         try {
     //            writeEvent.get(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-    //        } catch (Exception e) {
-    //            // Not handled here.
+    //         } catch (Exception e) {
+    //             // Not handled here.
     //        }
     //    });
     // }
@@ -220,7 +254,8 @@ public class StreamDuplicity {
             password = System.getenv().getOrDefault("PASSWORD", prop.getProperty("pravega_password"));
             numberOfSegments = Integer.valueOf(System.getenv().getOrDefault("NUMBER_OF_SEGMENTS", prop.getProperty("number_of_segments")));
             standalone = Boolean.valueOf(System.getenv().getOrDefault("STANDALONE", prop.getProperty("standalone")));
-            logger.info("bucketName:{}, region:{}, scopeName:{}, streamName:{}, controllerUriText: {}, username:{}, password: {}, numberOfSegments: {}, standalone: {}", bucketName, region, scopeName, streamName, controllerUriText, username, password, String.valueOf(numberOfSegments), String.valueOf(standalone));
+            mode = System.getenv().getOrDefault("MODE", prop.getProperty("mode"));
+            logger.info("bucketName:{}, region:{}, scopeName:{}, streamName:{}, controllerUriText: {}, username:{}, password: {}, numberOfSegments: {}, standalone: {}, mode:{}", bucketName, region, scopeName, streamName, controllerUriText, username, password, String.valueOf(numberOfSegments), String.valueOf(standalone), mode);
             if (Strings.isNullOrEmpty(key)) throw new IllegalArgumentException("Please specify proper aws_access_key_id");
             if (Strings.isNullOrEmpty(secret)) throw new IllegalArgumentException("Please specify proper aws_secret_access_key");
             if (Strings.isNullOrEmpty(region)) throw new IllegalArgumentException("Please specify proper aws_region such as us-east-1 or us-east-2");
@@ -229,6 +264,16 @@ public class StreamDuplicity {
             if (Strings.isNullOrEmpty(controllerUriText)) throw new IllegalArgumentException("Please specify existing controller_uri from stream store");
             if (Strings.isNullOrEmpty(username)) throw new IllegalArgumentException("Please specify existing admin credentials from stream store");
             if (Strings.isNullOrEmpty(password)) throw new IllegalArgumentException("Please specify existing admin credentials from stream store");
+            if (Strings.isNullOrEmpty(mode)) throw new IllegalArgumentException("Please specify mode of operation as reader or writer");
+            if (mode.toUpperCase().equals("WRITER")) {
+                prefix = System.getenv().getOrDefault("PREFIX", prop.getProperty("prefix"));
+                sequence = Long.valueOf(System.getenv().getOrDefault("OBJECT_SEQUENCE", prop.getProperty("object_sequence")));
+                if (Strings.isNullOrEmpty(prefix)) {
+                   throw new IllegalArgumentException("Please specify existing object prefix from the source S3 bucket");
+                }
+                if (sequence < 0) sequence = 0;
+                logger.info("prefix={},sequence={}", prefix, sequence);
+            }
             if (numberOfSegments < 1) numberOfSegments = 1;
         } catch (IOException e) {
             logger.info("configuration properties file not found: {}", e);

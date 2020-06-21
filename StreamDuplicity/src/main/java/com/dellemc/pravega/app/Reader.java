@@ -14,6 +14,7 @@ import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.stream.Checkpoint;
 import io.pravega.client.stream.EventRead;
+import io.pravega.client.stream.impl.EventReadImpl;
 import io.pravega.client.stream.EventStreamReader;
 import io.pravega.client.stream.Position;
 import io.pravega.client.stream.ReaderConfig;
@@ -106,9 +107,10 @@ public class Reader {
                     if (result != null && result.isCheckpoint() == false && result.getEvent() != null) {
                         lastPosition = result.getPosition();
                         afterRead(result.getEvent());
-                    } else { 
+                    } else {
                         logger.debug("result={}", result);
                     }
+
                     if (result == null) numNullEvents++;
                     if (numNullEvents > 3) {
                         logger.warn("A stream is not expected to have sequential null events.");
@@ -119,20 +121,18 @@ public class Reader {
                     // Expected
                 }
                 catch (IllegalStateException e) {
-                    logger.error("Exception from retries: {}", e);
+                    logger.error("Exception from retries: ", e);
                     checkAndThrow(e);
                 }
                 catch (IllegalArgumentException e) {
-                    logger.error("Invalid argument specified for reader {} : {}", readerId, e);
+                    logger.error("Invalid argument specified for reader {} : ", readerId, e);
                     checkAndThrow(e);
                 }
                 catch (TruncatedDataException e) {
-                    logger.error("Got a truncated data exception on forgetful reader {} after position {}", readerId, lastPosition, e);
-                    checkAndThrow(e);
+                    logger.error("Got a truncated data exception on forgetful reader {} after position {}, retrying ...", readerId, lastPosition, e);
                 }
                 catch (SegmentTruncatedException e) {
-                    logger.error("Segment is truncated: {}", e);
-                    checkAndThrow(e);
+                    logger.error("Segment is truncated, retrying... : ", e);
                 }
             }
 
@@ -164,7 +164,7 @@ public class Reader {
                 try {
                    cpResult = checkpoint.get(5, TimeUnit.SECONDS);
                 } catch(Exception e) {
-                   logger.error("An exception occurred while getting next checkpoint: {}", e);
+                   logger.error("An exception occurred while getting next checkpoint: ", e);
                 }
                 // reset ReaderGroup
                 ReaderGroupConfig.ReaderGroupConfigBuilder builder = ReaderGroupConfig.builder();
@@ -204,7 +204,7 @@ public class Reader {
             String objectKey = String.format("%030d", sequence);
             putS3Object(s3, bucketName, scopeName+"/" + streamName + "/" + readerId + "/" + objectKey, payload);
         } catch (Exception e) {
-             logger.error("Exception:{}", e);
+             logger.error("Exception:", e);
              throw e;
         }
     }
@@ -222,7 +222,7 @@ public class Reader {
             return response.eTag();
 
         } catch (S3Exception e) {
-             logger.error("Exception: {}", e);
+             logger.error("Exception: ", e);
              throw e;
         }
     }
@@ -317,7 +317,7 @@ public class Reader {
                     throw e;
                 }
                 if (printStackTrace) {
-                    logger.error("doWithRetry caught exception: {}", e);
+                    logger.error("doWithRetry caught exception: ", e);
                 }
                 else {
                     logger.error("doWithRetry caught exception with message {}", e.getMessage());

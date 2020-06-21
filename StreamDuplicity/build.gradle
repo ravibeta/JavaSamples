@@ -148,7 +148,7 @@ publishing {
 project.ext.buildVersion = computeVersion()
 
 def computeVersion() {
-    return "0.1-SNAPSHOT"
+    return "0.2-SNAPSHOT"
 }
 
 configurations.all {
@@ -178,7 +178,7 @@ shadowJar {
 docker {
     name "${dockerRegistry}/${dockerImageName}:${buildVersion}"
     tag 'dev', "${dockerRegistry}/${dockerImageName}:${buildVersion}"
-    dockerfile file('Dockerfile')
+    dockerfile file('Dockerfile.dev')
     // inputDir = file('.')
     files shadowJar.outputs, 'src/main/resources/config.properties'
     buildArgs([BUILD_VERSION: project.buildVersion])

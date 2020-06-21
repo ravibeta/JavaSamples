@@ -50,7 +50,7 @@ The **StreamDuplicity** server listens on port `2020` to requests made to `/v1/d
 | GET    | /restart/reader | N/A     | **200** Accepted + Boolean |
 | POST   | /restart/reader | N/A     | **200** Accepted |
 | GET    | /restart/writer | N/A     | **200** Accepted + Boolean |
-| POST   | /restart/reader  | N/A     | **200** Accepted |
+| POST   | /restart/writer  | N/A     | **200** Accepted |
 
 If you would like to run the standalone program without hosting on this on Kubernetes, you could set some of the following environment variables. Note only the first three are required to configure the destination.
 

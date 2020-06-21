@@ -4,20 +4,20 @@ kind: Deployment
 metadata:
   name: "streamduplicity-manager"
   labels:
-    app: pravega-longevity
+    app: streamduplicity
     test: "streamduplicity"
     type: manager
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pravega-longevity
+      app: streamduplicity
       test: "streamduplicity"
       type: manager
   template:
     metadata:
       labels:
-        app: pravega-longevity
+        app: streamduplicity
         test: "streamduplicity"
         type: manager
     spec:
@@ -30,16 +30,16 @@ spec:
             - name: "streamduplicity-config"
               mountPath: /etc/config
             - name: test-storage
-              mountPath: /data/test
+              mountPath: /data/config
               readOnly: false
           env:
             - name: PRAVEGA_CONTROLLER_URI
-              value: "{{ .Values.pravega_longevity_test.controller_uri }}"
+              value: "{{ .Values.stream.controller_uri }}"
             - name: API_HOST
               value: http://streamduplicity-manager:2020
           command: ["sh", "-c"]
           args:
-          - cp //etc//config//..data//config.properties //data//config//config.properties; chmod 755 //data//config//config.properties; java -jar /app/lib/streamduplicity.jar
+           - cp /etc/config/..data/config.properties /data/config/config.properties; chmod 755 /data/config/config.properties; sed -i 's/{//g' /data/config/config.properties; sed -i 's/":"//g' /data/config/config.properties; sed -i 's/",//g' /data/config/config.properties; sed -i 's/"//g' /data/config/config.properties; cp /data/config/config.properties /app/conf/config.properties; chmod +x /app/lib/streamduplicity.jar; java -jar /app/lib/streamduplicity.jar
       volumes:
         - name: "streamduplicity-config"
           configMap:
