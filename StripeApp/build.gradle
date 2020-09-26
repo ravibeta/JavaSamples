@@ -1,0 +1,94 @@
+buildscript {
+    repositories {
+        jcenter()
+        mavenLocal()
+        mavenCentral()
+        maven {
+            url "https://repository.apache.org/snapshots"
+        }
+    }
+    dependencies {
+      classpath 'com.github.jengelman.gradle.plugins:shadow:5.1.0'
+    }
+}
+
+plugins {
+    id 'java'
+    id 'application'
+    id 'idea'
+    id "io.freefair.lombok" version "3.1.0"
+    id 'com.gradle.build-scan' version '2.0.2'
+}
+
+group='com.stripe.app'
+apply plugin: 'com.github.johnrengelman.shadow'
+version = '1.0'
+sourceSets.main.java.srcDirs = ['src']
+mainClassName = 'com.dellemc.pravega.app.BasicWriterReaderApp'
+applicationName = 'StripeApp'
+
+
+repositories {
+        jcenter()
+        mavenLocal()
+        mavenCentral()
+        maven {
+            url "https://repository.apache.org/snapshots"
+        }
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots"
+        }
+}
+
+
+//Project dependencies
+dependencies {
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.24'
+    compile group: 'org.slf4j', name:'slf4j-api', version: '1.7.24'
+    compile group: 'com.jayway.jsonpath', name:'json-path', version:'2.1.0'
+    testCompile "junit:junit:4.+"
+}
+
+String classpathVar = configurations.compile.collect { it.getName() }.join(' ');
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'BasicWriterReaderApp',
+                'Implementation-Version': version,
+                'Main-Class': 'com.dellemc.pravega.app.BasicWriterReaderApp',
+		'Class-Path': classpathVar
+    }
+    baseName = project.name 
+    mainClassName = 'com.stripe.app.BasicWriterReaderApp'
+    from sourceSets.main.output
+    from {
+        configurations.runtimeClasspath.findAll { System.err.println(it.name); it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
+    zip64=true
+}
+
+apply plugin: "maven-publish"
+publishing {
+    repositories {
+        maven {
+            url = "http://localhost:9990/maven2"
+            credentials {
+                username "stripe"
+                password "password"
+            }
+            authentication {
+                basic(BasicAuthentication)
+            }
+        }
+    }
+
+    publications {
+        maven(MavenPublication) {
+            groupId = 'com.stripe.app.StripeApp'
+            artifactId = 'StripeApp'
+            version = '1.0'
+
+            from components.java
+        }
+    }
+}
+
