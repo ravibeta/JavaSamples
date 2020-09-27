@@ -54,11 +54,11 @@ jar {
     manifest {
         attributes 'Implementation-Title': 'BasicWriterReaderApp',
                 'Implementation-Version': version,
-                'Main-Class': 'com.dellemc.pravega.app.BasicWriterReaderApp',
+                'Main-Class': 'com.stripe.app.StripeApp',
 		'Class-Path': classpathVar
     }
     baseName = project.name 
-    mainClassName = 'com.stripe.app.BasicWriterReaderApp'
+    mainClassName = 'com.stripe.app.StripeApp'
     from sourceSets.main.output
     from {
         configurations.runtimeClasspath.findAll { System.err.println(it.name); it.name.endsWith('jar') }.collect { zipTree(it) }
