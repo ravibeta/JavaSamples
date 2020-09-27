@@ -24,7 +24,7 @@ group='com.stripe.app'
 apply plugin: 'com.github.johnrengelman.shadow'
 version = '1.0'
 sourceSets.main.java.srcDirs = ['src']
-mainClassName = 'com.dellemc.pravega.app.BasicWriterReaderApp'
+mainClassName = 'com.stripe.app.StripeApp'
 applicationName = 'StripeApp'
 
 
@@ -46,13 +46,14 @@ dependencies {
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.24'
     compile group: 'org.slf4j', name:'slf4j-api', version: '1.7.24'
     compile group: 'com.jayway.jsonpath', name:'json-path', version:'2.1.0'
+    // implementation 'com.stripe:stripe-android:16.0.0'
     testCompile "junit:junit:4.+"
 }
 
 String classpathVar = configurations.compile.collect { it.getName() }.join(' ');
 jar {
     manifest {
-        attributes 'Implementation-Title': 'BasicWriterReaderApp',
+        attributes 'Implementation-Title': 'StripeApp',
                 'Implementation-Version': version,
                 'Main-Class': 'com.stripe.app.StripeApp',
 		'Class-Path': classpathVar
