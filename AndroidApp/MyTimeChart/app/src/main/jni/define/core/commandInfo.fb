@@ -1,0 +1,7 @@
+namespace com.rearview.timechart.core;
+
+table commandInfo {
+  arguments:[string];
+}
+  
+root_type commandInfo;

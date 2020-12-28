@@ -7,8 +7,8 @@
 
 
 namespace com {
-namespace eolwral {
-namespace osmonitor {
+namespace rearview {
+namespace timechart {
 namespace core {
 
 struct connectionInfo;

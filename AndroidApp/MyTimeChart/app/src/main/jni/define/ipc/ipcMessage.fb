@@ -1,0 +1,33 @@
+namespace com.rearview.timechart.ipc;
+
+enum ipcCategory : byte {
+  /// Non-Exist
+  NONEXIST = 0,
+  /// Connection 
+  CONNECTION = 1,
+  /// End
+  FINAL = 99
+}
+
+enum ipcType : byte {
+  /// ACTION 
+  ACTION = 0,
+  /// RESULT 
+  RESULT = 1,
+  /// COMMAND 
+  COMMAND = 2,
+  /// EXIT 
+  EXIT = 10
+} 
+
+table ipcData {
+  category:ipcCategory = NONEXIST;
+  payload:[ubyte];
+}
+
+table ipcMessage {
+  type:ipcType = ACTION;
+  data:[ipcData];
+}
+
+root_type ipcMessage;

@@ -69,4 +69,8 @@ public class Settings {
     helper.setString(SESSION_SECTION, "");
     return value;
   }
+
+  public Boolean isRoot() {
+    return false;
+  }
 }
