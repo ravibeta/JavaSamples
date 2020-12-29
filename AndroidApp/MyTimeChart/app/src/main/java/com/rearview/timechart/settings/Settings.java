@@ -60,6 +60,15 @@ public class Settings {
   }
 
   /**
+   * get the Interval
+   *
+   * @return token
+   */
+  public Integer getInterval() {
+    return 1;
+  }
+
+  /**
    * get session value
    * 
    * @return value

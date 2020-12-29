@@ -26,14 +26,14 @@ import java.nio.channels.FileLock;
 public class CoreUtil {
 
     /**
-     * predefine location for osmcore
+     * predefine location for tccore
      */
-    private final static String binaryName = "osmcore";
+    private final static String binaryName = "tccore";
 
     /**
      * predefine socket name
      */
-    private final static String socketName = "osmipcV";
+    private final static String socketName = "rvtcpcV";
 
     /**
      * bring up help activity
@@ -258,7 +258,7 @@ public class CoreUtil {
     }
 
     /**
-     * execute osmcore as a binary execute
+     * execute timechart as a binary execute
      *
      * @param context
      * @throws InterruptedException
@@ -278,7 +278,7 @@ public class CoreUtil {
         restoreSecurityContext(binary, settings);
 
         // copy file
-        if (!copyFile("osmcore", binary, context))
+        if (!copyFile("timechart", binary, context))
             return flag;
 
         // write token file
@@ -296,7 +296,7 @@ public class CoreUtil {
             return flag;
         }
 
-        // execute osmcore
+        // execute timechart
         try {
             CoreUtil.runSHELL(new String[]{"chmod", "755", binary});
             if (!settings.isRoot()) {

@@ -15,8 +15,6 @@ import java.util.Comparator;
 import java.util.PriorityQueue;
 import java.util.concurrent.Semaphore;
 
-// import com.eolwral.osmonitor.util.CoreUtil;
-
 /**
  * implement communicate mechanize between process with Unix socket
  */
@@ -197,7 +195,7 @@ public class IpcService {
   }
 
   /**
-   * connection to osmcore
+   * connection to timechart
    * @return true == success, false == fail
    */
   private boolean connect() {
@@ -205,7 +203,7 @@ public class IpcService {
     try {
       Settings settings = Settings.getInstance(ipcContext); 
 
-      client.connect(1*1000);
+      client.connect(settings.getInterval()*1000);
 
       // send token
       OutputStream outData = client.getOutputStream();
@@ -246,7 +244,7 @@ public class IpcService {
   }
 
   /**
-   * force connect to osmcore
+   * force connect to timechart
    * @return true == connected, false == not connected
    */
   public boolean forceConnect() {
@@ -290,7 +288,7 @@ public class IpcService {
   }
 
   /**
-   * send command to osmcore
+   * send command to timechart
    * @param[in] category command type
    * @param[in] arguments arguments for command
    */
@@ -509,7 +507,7 @@ public class IpcService {
     }
     
     /**
-     * send request to osmcore and get data when data is ready
+     * send request to timechart and get data when data is ready
      * @param[in] job the new job
      * @return result the new data
      */

@@ -58,7 +58,7 @@ namespace ipc {
 
     if (!this->isAbstractSocket())
     {
-      __android_log_print(ANDROID_LOG_VERBOSE, "OSMCore","use file system Unix domain socket");
+      __android_log_print(ANDROID_LOG_VERBOSE, "TimeChart","use file system Unix domain socket");
       strncpy(this->uServerAddr.sun_path, this->uServerSocketName.c_str(), UNIX_PATH_MAX-1);
       this->uServerLen = this->uServerSocketName.length() + offsetof(struct sockaddr_un, sun_path);
 
@@ -67,7 +67,7 @@ namespace ipc {
         if (errno != ENOENT) return (false);
     }
     else {
-        __android_log_print(ANDROID_LOG_VERBOSE, "OSMCore","use abstract Unix domain socket");
+        __android_log_print(ANDROID_LOG_VERBOSE, "TimeChart","use abstract Unix domain socket");
       this->uServerAddr.sun_path[0] = '\0';
       strcpy(this->uServerAddr.sun_path+1, this->uServerSocketName.c_str());
       this->uServerLen = 1 + this->uServerSocketName.length() + offsetof(struct sockaddr_un, sun_path);
@@ -91,7 +91,7 @@ namespace ipc {
     this->serverFD = socket(AF_UNIX, SOCK_STREAM, 0);
 
     if(this->serverFD < 0) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "OSMCore","Failed to open socket: %d\n", errno);
+      __android_log_print(ANDROID_LOG_VERBOSE, "TimeChart","Failed to open socket: %d\n", errno);
       return (false);
     }
 
@@ -99,7 +99,7 @@ namespace ipc {
     int option = true;
     if(::setsockopt(this->serverFD, SOL_SOCKET, SO_REUSEADDR, (char *)&option, sizeof(option)) < 0)
     {
-      __android_log_print(ANDROID_LOG_VERBOSE, "OSMCore","Failed to set socket failed: %d\n", errno);
+      __android_log_print(ANDROID_LOG_VERBOSE, "TimeChart","Failed to set socket failed: %d\n", errno);
       ::close(this->serverFD);
       return (false);
     }
@@ -109,14 +109,14 @@ namespace ipc {
 
     if (result < 0)
     {
-      __android_log_print(ANDROID_LOG_VERBOSE, "OSMCore","Failed to bind socket: %d\n", errno);
+      __android_log_print(ANDROID_LOG_VERBOSE, "TimeChart","Failed to bind socket: %d\n", errno);
       ::close(this->serverFD);
       return (false);
     }
 
     if (listen(this->serverFD, 8) < 0)
     {
-      __android_log_print(ANDROID_LOG_VERBOSE, "OSMCore","Failed to listen: %d\n", errno);
+      __android_log_print(ANDROID_LOG_VERBOSE, "TimeChart","Failed to listen: %d\n", errno);
       ::close(this->serverFD);
       return (false);
     }
@@ -125,7 +125,7 @@ namespace ipc {
     {
       if (chown(this->uServerSocketName.c_str(), this->socketUid, this->socketUid) != 0)
       {
-        __android_log_print(ANDROID_LOG_VERBOSE, "OSMCore","Failed to change owner: %d\n", errno);
+        __android_log_print(ANDROID_LOG_VERBOSE, "TimeChart","Failed to change owner: %d\n", errno);
         ::close(this->serverFD);
         return (false);
       }

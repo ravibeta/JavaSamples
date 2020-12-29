@@ -56,7 +56,7 @@
 //    final Settings setting = Settings.getInstance(this);
 //    if ((setting.isEnableCPUMeter() || setting.isAddShortCut())
 //        && !CoreUtil.isServiceRunning(this))
-//      startService(new Intent(this, OSMonitorService.class));
+//      startService(new Intent(this, TimeChartService.class));
 //
 //    // prepare exit
 //    LocalBroadcastManager.getInstance(this).registerReceiver(ExitReceiver,

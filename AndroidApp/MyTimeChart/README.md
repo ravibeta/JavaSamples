@@ -19,3 +19,6 @@ Use this application measure and control the activities on your phone that are
 - resist from checking your phone and take time to smell the roses.
 
 All this with a simple pie chart and no effort on your part.
+
+References: OSMonitor app
+                       PieChart visualization

@@ -19,6 +19,9 @@
 #include <android/log.h>
 #define APPNAME "TimeChart"
 #include <connection.h>
+#include <ipcserver.h>
+#include <command.h>
+#include <base.h>
 #define BufferSize 256
 
 // using name space
@@ -267,11 +270,11 @@ bool processCommandMsg()
 
     // skip invalid data
     flatbuffers::Verifier verifier(data->payload()->Data(), data->payload()->size());
-    if(!core::VerifycommandInfoBuffer(verifier))
+    if(!com::rearview::timechart::core::VerifycommandInfoBuffer(verifier))
       continue;
 
-    core::command cmd(data->category(), core::GetcommandInfo(data->payload()->Data()));
-    cmd.execute();
+    // TODO: core::command cmd(data->category(), core::GetcommandInfo(data->payload()->Data()));
+    // TODO: cmd.execute();
   }
   return (true);
 }
@@ -302,6 +305,9 @@ bool processCommand()
 
   case ipc::ipcType_COMMAND:
     return (processCommandMsg());
+
+      case ipc::ipcType_RESULT:
+        return (false);
   }
 
   return (false);
